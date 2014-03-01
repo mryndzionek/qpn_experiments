@@ -42,6 +42,28 @@ Build instructions
 
 		make upload_blink
 
+Hardware setup
+--------------
+
+ATmega32A on a breadboard. 16MHz crystal. Fuses set to: `-U lfuse:w:0xff:m -U hfuse:w:0xd9:m`.
+Serial LED resistors - 120Ohm. 16x2 LCD - HD44780 compatible - 10kOhm contrast pot.
+
+| Pin  | Peripheral|
+| ------------- | -------------|
+| PD0  | red LED |
+| PD1  | yellow LED |
+| PD2  | green LED |
+| PD5  | LCD backlight - using NPN transistor |
+| PD6  | idle LED (UV) |
+| PC0  | LCD RS |
+| PC1  | LCD EN |
+| PC2  | LCD D4 |
+| PC3  | LCD D5 |
+| PC4  | LCD D6 |
+| PC5  | LCD D7 |
+| AREF | 100nF to GND |
+
+
 Implemented examples
 --------------------
 

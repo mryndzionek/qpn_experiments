@@ -37,7 +37,6 @@ void QF_onStartup(void) {
 /*..........................................................................*/
 void QF_onIdle(void) {        /* entered with interrupts LOCKED, see NOTE01 */
 
-	/* toggle the LED number 7 on and then off, see NOTE02 */
 	LED_ON(6);
 	LED_OFF(6);
 
