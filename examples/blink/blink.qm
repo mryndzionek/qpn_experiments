@@ -7,7 +7,7 @@
    <attribute name="attr1" type="uint8_t" visibility="0x02" properties="0x00"/>
    <statechart>
     <initial target="../1">
-     <initial_glyph conn="6,4,5,0,17,6">
+     <initial_glyph conn="6,4,5,0,12,2">
       <action box="0,-2,6,2"/>
      </initial_glyph>
     </initial>
@@ -16,11 +16,11 @@
 QActive_arm((QActive *)me, BLINK_TOUT);</entry>
      <exit>QActive_disarm((QActive *)me);</exit>
      <tran trig="Q_TIMEOUT" target="../../2">
-      <tran_glyph conn="8,18,3,3,29">
+      <tran_glyph conn="3,14,3,3,26">
        <action box="0,-2,10,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="8,10,18,14">
+     <state_glyph node="3,6,18,14">
       <entry box="1,2,5,2"/>
       <exit box="1,4,5,2"/>
      </state_glyph>
@@ -30,16 +30,16 @@ QActive_arm((QActive *)me, BLINK_TOUT);</entry>
 QActive_arm((QActive *)me, BLINK_TOUT);</entry>
      <exit>QActive_disarm((QActive *)me);</exit>
      <tran trig="Q_TIMEOUT" target="../../1">
-      <tran_glyph conn="56,22,1,1,-30">
+      <tran_glyph conn="48,18,1,1,-27">
        <action box="-10,-2,10,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="37,10,19,14">
+     <state_glyph node="29,6,19,14">
       <entry box="1,2,5,2"/>
       <exit box="1,4,5,2"/>
      </state_glyph>
     </state>
-    <state_diagram size="63,31"/>
+    <state_diagram size="52,26"/>
    </statechart>
   </class>
   <attribute name="AO_blink" type="QActive *const" visibility="0x00" properties="0x00"/>
