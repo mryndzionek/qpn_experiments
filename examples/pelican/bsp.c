@@ -64,10 +64,21 @@ void QF_onStartup(void) {
 void QF_onIdle(void) {        /* entered with interrupts LOCKED, see NOTE01 */
 
 	/* toggle the LED number 7 on and then off, see NOTE02 */
-	LED_ON(7);
-	LED_OFF(7);
+	LED_ON(6);
+	LED_OFF(6);
 
+#ifdef NDEBUG
+
+	MCUCR = (0 << SM0) | (1 << SE);/*idle sleep mode, adjust to your project */
+
+	/* never separate the following two assembly instructions, see NOTE03 */
+	__asm__ __volatile__ ("sei" "\n\t" :: );
+	__asm__ __volatile__ ("sleep" "\n\t" :: );
+
+	MCUCR = 0;                                           /* clear the SE bit */
+#else
 	QF_INT_ENABLE();
+#endif
 
 }
 /*..........................................................................*/
