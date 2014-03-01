@@ -38,7 +38,7 @@ Build instructions
 
 		make
 
-7. Upload the simple `blink` example hex file to the MCU
+7. Upload the simple `blink` example hex file to the MCU:
 
 		make upload_blink
 
