@@ -19,9 +19,7 @@ Build instructions
 
 1. Clone the repo:
 
-		```sh
 		https://github.com/mryndzionek/qpn_experiments.git
-		```
 
 2. Edit the gcc-avr options in `qpn_experiments/toolchain-avr-gcc.make` file
 
@@ -31,24 +29,18 @@ Build instructions
 
 5. Configure the project:
 
-		```sh
 		cd qpn_experiments
 		mkdir build
 		cd build
 		cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-avr-gcc.make -DCMAKE_BUILD_TYPE=MinSizeRel ..
-		```
 
 6. Build the project:
 
-		```sh
 		make
-		```
 
 7. Upload the simple `blink` example hex file to the MCU
 
-		```sh
 		make upload_blink
-		```
 
 Notes and Things to Investigate
 -------------------------------
