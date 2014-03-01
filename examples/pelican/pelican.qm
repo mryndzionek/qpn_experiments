@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<model version="2.2.03">
+<model version="3.0.1">
  <documentation>PEdestrian LIght CONtrolled (PELICAN) crossing example</documentation>
  <framework name="qpn"/>
  <package name="components" stereotype="0x02">
@@ -129,11 +129,13 @@ QActive_arm((QActive *)me, PEDS_WALK_TOUT);</entry>
        <entry>BSP_showState(&quot;pedsFlash&quot;);
 QActive_arm((QActive *)me, PEDS_FLASH_TOUT);
 me-&gt;flashCtr = PEDS_FLASH_NUM*2 + 1;</entry>
-       <exit>QActive_disarm((QActive *)me);</exit>
+       <exit>
+QActive_disarm((QActive *)me);</exit>
        <tran trig="Q_TIMEOUT">
         <choice>
          <guard>me-&gt;flashCtr != 0</guard>
          <action>--me-&gt;flashCtr;
+BSP_flashPeds();
 QActive_arm((QActive *)me, PEDS_FLASH_TOUT);</action>
          <choice>
           <guard>(me-&gt;flashCtr &amp; 1) == 0</guard>

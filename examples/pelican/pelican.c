@@ -26,7 +26,7 @@ enum PelicanTimeouts {  /* various timeouts in ticks */
     CARS_YELLOW_TOUT = BSP_TICKS_PER_SEC * 3,  /* yellow for cars */
     PEDS_WALK_TOUT   = BSP_TICKS_PER_SEC * 3,  /* walking time for peds */
     PEDS_FLASH_TOUT  = BSP_TICKS_PER_SEC / 5,  /* flashing timeout for peds */
-    PEDS_FLASH_NUM   = 5*2,                    /* number of flashes for peds */
+    PEDS_FLASH_NUM   = (5*2)+1,                    /* number of flashes for peds */
     OFF_FLASH_TOUT   = BSP_TICKS_PER_SEC / 2   /* flashing timeout when off */
 };
 
@@ -315,6 +315,7 @@ static QState Pelican_pedsFlash(Pelican * const me) {
         }
         /* @(/1/0/1/1/3/2) */
         case Q_EXIT_SIG: {
+
             QActive_disarm((QActive *)me);
             status_ = Q_HANDLED();
             break;
@@ -324,6 +325,7 @@ static QState Pelican_pedsFlash(Pelican * const me) {
             /* @(/1/0/1/1/3/2/0/0) */
             if (me->flashCtr != 0) {
                 --me->flashCtr;
+                BSP_flashPeds();
                 QActive_arm((QActive *)me, PEDS_FLASH_TOUT);
                 /* @(/1/0/1/1/3/2/0/0/0) */
                 if ((me->flashCtr & 1) == 0) {
