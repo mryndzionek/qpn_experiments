@@ -46,7 +46,7 @@ Implemented examples
 --------------------
 
 * simple `blink` example
-![](images/blink.png?raw=true
+![](images/blink.png?raw=true)
 
 * `Pelican crossing` example
 ![](images/pelican.png?raw=true)
