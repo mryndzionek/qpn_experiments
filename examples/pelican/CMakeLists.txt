@@ -1,0 +1,10 @@
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+add_avr_executable(
+    pelican
+    main.c
+    pelican.c
+    bsp.c
+    ped.c
+    ${CMAKE_SOURCE_DIR}/qpn/source/qepn.c
+    ${CMAKE_SOURCE_DIR}/qpn/source/qfn.c
+)
