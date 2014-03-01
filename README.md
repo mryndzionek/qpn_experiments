@@ -4,7 +4,10 @@ QP-nano framework on ATmega32A
 Introduction
 ------------
 
-Some tests/examples of [QP-framework](http://www.state-machine.com/qp/qpn/)
+Some tests/examples of the [QP-framework](http://www.state-machine.com/qp/qpn/)
+
+- learn the to use the framework and RTOS concepts 
+- investigate performance/limitations while using low-end hardware
 
 Dependencies
 ------------
@@ -45,7 +48,7 @@ make
 
 ```sh
 make upload_blink
-``
+```
 
 Notes and Things to Investigate
 -------------------------------
