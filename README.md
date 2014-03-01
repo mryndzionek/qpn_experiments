@@ -45,11 +45,9 @@ Build instructions
 Implemented examples
 --------------------
 
-* simple `blink` example
-![](images/blink.png?raw=true)
+![simple LED blink](images/blink.png?raw=true)
 
-* `Pelican crossing` example
-![](images/pelican.png?raw=true)
+![Pelican crossing example](images/pelican.png?raw=true)
 		
 
 Notes and Things to Investigate
