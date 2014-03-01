@@ -19,7 +19,7 @@ Build instructions
 
 1. Clone the repo:
 
-		https://github.com/mryndzionek/qpn_experiments.git
+		git clone https://github.com/mryndzionek/qpn_experiments.git
 
 2. Edit the gcc-avr options in `qpn_experiments/toolchain-avr-gcc.make` file
 
