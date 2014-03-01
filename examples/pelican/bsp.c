@@ -1,7 +1,6 @@
 #include "qpn_port.h"
 #include "bsp.h"
 #include <avr/io.h>                                              /* AVR I/O */
-#include <avr/delay.h>
 #include "lcd.h"
 
 #define LED_OFF(num_)       (PORTD &= ~(1 << (num_)))
@@ -23,8 +22,8 @@ ISR(TIMER1_COMPA_vect) {
 void BSP_init(void) {
 	DDRD  = 0xFF;                    /* All PORTD pins are outputs for LEDs */
 	LED_OFF_ALL();                                     /* turn off all LEDs */
-	LCD_BL_ON();                                   /* turn LCD backlight on */
 	lcd_init();
+	LCD_BL_ON();                                   /* turn LCD backlight on */
 }
 /*..........................................................................*/
 void QF_onStartup(void) {
@@ -71,7 +70,7 @@ void BSP_signalCars(enum BSP_CarsSignal sig) {
 		LED_OFF(1);
 		LED_OFF(2);
 		lcd_go_line(2);
-		lcd_write("RED             ");
+		lcd_write("CARS: RED       ");
 		break;
 
 	case CARS_YELLOW:
@@ -79,7 +78,7 @@ void BSP_signalCars(enum BSP_CarsSignal sig) {
 		LED_OFF(2);
 		LED_ON(1);
 		lcd_go_line(2);
-		lcd_write("YELLOW          ");
+		lcd_write("CARS: YELLOW    ");
 		break;
 
 	case CARS_GREEN:
@@ -87,7 +86,7 @@ void BSP_signalCars(enum BSP_CarsSignal sig) {
 		LED_OFF(1);
 		LED_ON(2);
 		lcd_go_line(2);
-		lcd_write("GREEN           ");
+		lcd_write("CARS: GREEN     ");
 		break;
 
 	case CARS_BLANK:

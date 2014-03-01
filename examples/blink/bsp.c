@@ -1,7 +1,6 @@
 #include "qpn_port.h"
 #include "bsp.h"
 #include <avr/io.h>                                              /* AVR I/O */
-#include <avr/sleep.h>
 
 #define LED_ON(num_)       (PORTD &= ~(1 << (num_)))
 #define LED_OFF(num_)      (PORTD |= (1 << (num_)))

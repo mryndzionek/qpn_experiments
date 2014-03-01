@@ -75,7 +75,7 @@ void lcd_init(void) {
   LCD_DIR |= LCD_RS | LCD_EN | LCD_DATA_PINS;
   LCD_PORT &= ~(LCD_RS | LCD_EN | LCD_DATA_PINS);
 
-  _delay_ms(20); // give lcd time to startup
+  _delay_ms(40); // give lcd time to startup
 
   lcd_send4(0x03);
   _delay_ms(5);
