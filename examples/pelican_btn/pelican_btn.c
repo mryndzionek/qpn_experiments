@@ -61,7 +61,7 @@ static QState Pelican_offline(Pelican * const me);
 Pelican AO_Pelican;     /* the single instance of the Pelican active object */
 
 /* Pelican class definition ------------------------------------------------*/
-/* @(/1/3) .................................................................*/
+/* @(/1/2) .................................................................*/
 void Pelican_ctor(void) {
     QActive_ctor(&AO_Pelican.super, Q_STATE_CAST(&Pelican_initial));
 }

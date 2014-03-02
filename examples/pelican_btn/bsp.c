@@ -18,22 +18,34 @@
 Q_DEFINE_THIS_FILE
 #endif
 
-static volatile uint8_t press = 0;
-static volatile uint8_t detect = 0;
+static volatile uint8_t onoff_sig = OFF_SIG;
+static volatile uint8_t onff_press = 0;
+static volatile uint8_t onff_detect = 0;
+
+static volatile uint8_t peds_press = 0;
+static volatile uint8_t peds_detect = 0;
 
 /*..........................................................................*/
 ISR(INT0_vect)
 {
-	if(!press)
+	if(!onff_press)
 	{
-		QActive_postISR((QActive *)&AO_Ped, BTN1_SIG, 0);
-		press++;
+		QActive_postISR((QActive *)&AO_Pelican, onoff_sig, 0);
+		onff_press++;
+		if(onoff_sig == ON_SIG)
+			onoff_sig = OFF_SIG;
+		else
+			onoff_sig = ON_SIG;
 	}
 }
 /*..........................................................................*/
 ISR(INT1_vect)
 {
-
+	if(!peds_press)
+	{
+		QActive_postISR((QActive *)&AO_Pelican, PEDS_WAITING_SIG, 0);
+		peds_press++;
+	}
 }
 /*..........................................................................*/
 ISR(TIMER1_COMPA_vect) {
@@ -41,13 +53,21 @@ ISR(TIMER1_COMPA_vect) {
 	 * interrupt is automatically cleared in hardware when the ISR runs.
 	 */
 	QK_ISR_ENTRY();                     /* inform QK kernel about ISR entry */
-	if(!detect)
+	if(!onff_detect)
 	{
-		if(press)
-			detect = 1;
+		if(onff_press)
+			onff_detect++;
 	} else {
-		detect = 0;
-		press = 0;
+		onff_detect = 0;
+		onff_press = 0;
+	}
+	if(!peds_detect)
+	{
+		if(peds_press)
+			peds_detect++;
+	} else {
+		peds_detect = 0;
+		peds_press = 0;
 	}
 	QF_tick();
 
@@ -102,7 +122,7 @@ void Q_onAssert(char const Q_ROM * const Q_ROM_VAR file, int line) {
 	LED_ON_ALL();                                            /* all LEDs on */
 	lcd_clear();
 	lcd_set_line(0);
-	snprintf (buff, sizeof(buff), "file: %d", press);
+	snprintf (buff, sizeof(buff), "file: %d", onff_press);
 	lcd_putstr(buff);
 	lcd_set_line(1);
 	snprintf (buff, sizeof(buff), "line: %d", line);

@@ -219,71 +219,10 @@ BSP_signalPeds(PEDS_BLANK);</action>
     <state_diagram size="76,99"/>
    </statechart>
   </class>
-  <class name="Ped" superclass="qpn::QActive">
-   <attribute name="retryCtr" type="uint8_t" visibility="0x02" properties="0x00"/>
-   <statechart>
-    <initial target="../1">
-     <initial_glyph conn="4,2,5,1,35,4,-2">
-      <action box="0,-2,6,2"/>
-     </initial_glyph>
-    </initial>
-    <state name="off">
-     <entry>BSP_showState(&quot;off&quot;);
-QActive_post((QActive *)&amp;AO_Pelican, OFF_SIG, 0);</entry>
-     <exit>QActive_post((QActive *)&amp;AO_Pelican, ON_SIG, 0);</exit>
-     <tran trig="BTN1" target="../../2">
-      <action>me-&gt;retryCtr = N_ATTEMPTS;</action>
-      <tran_glyph conn="3,13,3,1,36,9,-2">
-       <action box="0,-2,21,4"/>
-      </tran_glyph>
-     </tran>
-     <state_glyph node="3,4,34,13">
-      <entry box="1,2,7,2"/>
-      <exit box="1,4,7,2"/>
-     </state_glyph>
-    </state>
-    <state name="wait">
-     <entry>BSP_showState(&quot;wait&quot;);
-QActive_post((QActive *)&amp;AO_Pelican, PEDS_WAITING_SIG, 0);
-QActive_arm((QActive *)me, WAIT_TOUT);</entry>
-     <tran trig="Q_TIMEOUT">
-      <action>--me-&gt;retryCtr;</action>
-      <choice target="../..">
-       <guard>me-&gt;retryCtr &gt; 0</guard>
-       <choice_glyph conn="17,27,5,1,22,3,-2">
-        <action box="1,0,15,2"/>
-       </choice_glyph>
-      </choice>
-      <choice target="../../../1">
-       <guard>else</guard>
-       <choice_glyph conn="17,27,4,1,7,25,-25,-5">
-        <action box="1,7,6,2"/>
-       </choice_glyph>
-      </choice>
-      <tran_glyph conn="3,27,3,-1,14">
-       <action box="0,-2,12,4"/>
-      </tran_glyph>
-     </tran>
-     <tran trig="BTN1">
-      <tran_glyph conn="3,32,3,-1,-2,2,8">
-       <action box="0,-2,6,2"/>
-      </tran_glyph>
-     </tran>
-     <state_glyph node="3,20,34,17">
-      <entry box="1,2,5,2"/>
-     </state_glyph>
-    </state>
-    <state_diagram size="45,39"/>
-   </statechart>
-  </class>
   <attribute name="AO_Pelican" type="QActive * const" visibility="0x00" properties="0x00"/>
   <operation name="Pelican_ctor" type="void" visibility="0x00" properties="0x01">
    <documentation>constructor</documentation>
    <code>QActive_ctor(&amp;AO_Pelican.super, Q_STATE_CAST(&amp;Pelican_initial));</code>
-  </operation>
-  <operation name="Ped_ctor" type="void" visibility="0x00" properties="0x01">
-   <documentation>constructor</documentation>
-   <code>QActive_ctor(&amp;AO_Ped.super, Q_STATE_CAST(&amp;Ped_initial));</code>
   </operation>
  </package>
  <directory name=".">
@@ -295,16 +234,13 @@ enum PelicanSignals {
     PEDS_WAITING_SIG = Q_USER_SIG,
     OFF_SIG,
     ON_SIG,
-    BTN1_SIG,
     TEST_SIG
 };
 
 // active objects ................................................*/
 $declare(components::Pelican_ctor)
-$declare(components::Ped_ctor)
 
 extern struct PelicanTag AO_Pelican;
-extern struct PedTag     AO_Ped;
 
 #endif /* pelican_h */</text>
   </file>
@@ -319,13 +255,11 @@ Q_DEFINE_THIS_FILE
 
 /*..........................................................................*/
 static QEvt l_pelicanQueue[3];
-static QEvt l_pedQueue[3];
 
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
     { (QActive *)0,           (QEvt *)0,      0                     },
-    { (QActive *)&amp;AO_Pelican, l_pelicanQueue, Q_DIM(l_pelicanQueue) },
-    { (QActive *)&amp;AO_Ped,     l_pedQueue,     Q_DIM(l_pedQueue)     }
+    { (QActive *)&amp;AO_Pelican, l_pelicanQueue, Q_DIM(l_pelicanQueue) }
 };
 
 /* make sure that the QF_active[] array matches QF_MAX_ACTIVE in qpn_port.h */
@@ -334,7 +268,6 @@ Q_ASSERT_COMPILE(QF_MAX_ACTIVE == Q_DIM(QF_active) - 1);
 /*..........................................................................*/
 int main() {
     Pelican_ctor();  /* instantiate the Pelican AO */
-    Ped_ctor();      /* instantiate the Ped AO */
     BSP_init();      /* initialize the board */
 
     return QF_run(); /* transfer control to QF-nano */
@@ -367,31 +300,6 @@ Pelican AO_Pelican;     /* the single instance of the Pelican active object */
 /* Pelican class definition ------------------------------------------------*/
 $define(components::Pelican_ctor)
 $define(components::Pelican)</text>
-  </file>
-  <file name="ped_btn.c">
-   <text>#include &quot;qpn_port.h&quot;
-#include &quot;bsp.h&quot;
-#include &quot;pelican_btn.h&quot;
-
-#ifndef NDEBUG
-Q_DEFINE_THIS_FILE
-#endif
-
-enum PedTimeouts {                             /* various timeouts in ticks */
-    N_ATTEMPTS = 10,                      /* number of PED_WAITING attempts */
-    WAIT_TOUT = BSP_TICKS_PER_SEC * 3,  /* wait between posting PED_WAITING */
-    OFF_TOUT  = BSP_TICKS_PER_SEC * 8    /* wait time after posting OFF_SIG */
-};
-
-/* Peld class declaration --------------------------------------------------*/
-$declare(components::Ped)
-
-/* Global objects ----------------------------------------------------------*/
-Ped AO_Ped;                 /* the single instance of the Ped active object */
-
-/* Pelican class definition ------------------------------------------------*/
-$define(components::Ped_ctor)
-$define(components::Ped)</text>
   </file>
  </directory>
 </model>

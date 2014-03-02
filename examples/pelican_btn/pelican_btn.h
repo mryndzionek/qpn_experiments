@@ -22,19 +22,14 @@ enum PelicanSignals {
     PEDS_WAITING_SIG = Q_USER_SIG,
     OFF_SIG,
     ON_SIG,
-    BTN1_SIG,
     TEST_SIG
 };
 
 // active objects ................................................*/
-/* @(/1/3) .................................................................*/
+/* @(/1/2) .................................................................*/
 void Pelican_ctor(void);
-
-/* @(/1/4) .................................................................*/
-void Ped_ctor(void);
 
 
 extern struct PelicanTag AO_Pelican;
-extern struct PedTag     AO_Ped;
 
 #endif /* pelican_h */

@@ -5,7 +5,6 @@ add_avr_executable(
     main.c
     pelican_btn.c
     bsp.c
-	ped_btn.c
     ${CMAKE_SOURCE_DIR}/lcd/lcd.c
     ${CMAKE_SOURCE_DIR}/qpn/source/qepn.c
     ${CMAKE_SOURCE_DIR}/qpn/source/qfn.c
