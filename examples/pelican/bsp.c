@@ -105,14 +105,12 @@ void BSP_signalPeds(enum BSP_PedsSignal sig) {
 		lcd_putstr("***DON'T WALK***");
 		break;
 	case PEDS_BLANK:
+ 		lcd_set_line(0);
+ 		lcd_putstr("                ");
 		break;
 	case PEDS_WALK:
 		lcd_set_line(0);
 		lcd_putstr("*** WALK NOW ***");
 		break;
 	}
-}
-
-void BSP_flashPeds(void) {
-	LED_TOGGLE(5);
 }

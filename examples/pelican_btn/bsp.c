@@ -170,22 +170,16 @@ void BSP_signalCars(enum BSP_CarsSignal sig) {
 void BSP_signalPeds(enum BSP_PedsSignal sig) {
 	switch (sig) {
 	case PEDS_DONT_WALK:
-		LCD_BL_ON();
 		lcd_set_line(0);
 		lcd_putstr("***DON'T WALK***");
 		break;
 	case PEDS_BLANK:
 		lcd_set_line(0);
 		lcd_putstr("                ");
-		LCD_BL_OFF();
 		break;
 	case PEDS_WALK:
 		lcd_set_line(0);
 		lcd_putstr("*** WALK NOW ***");
 		break;
 	}
-}
-
-void BSP_flashPeds(void) {
-	LED_TOGGLE(5);
 }

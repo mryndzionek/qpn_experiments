@@ -135,7 +135,6 @@ QActive_disarm((QActive *)me);</exit>
         <choice>
          <guard>me-&gt;flashCtr != 0</guard>
          <action>--me-&gt;flashCtr;
-BSP_flashPeds();
 QActive_arm((QActive *)me, PEDS_FLASH_TOUT);</action>
          <choice>
           <guard>(me-&gt;flashCtr &amp; 1) == 0</guard>

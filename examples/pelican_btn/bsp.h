@@ -16,7 +16,6 @@ enum BSP_PedsSignal {
 void BSP_init(void);
 void BSP_signalCars(enum BSP_CarsSignal sig);
 void BSP_signalPeds(enum BSP_PedsSignal sig);
-void BSP_flashPeds(void);
 
 #define BSP_showState(state_) ((void)0)
 
