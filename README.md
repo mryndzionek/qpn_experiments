@@ -61,6 +61,8 @@ Serial LED resistors - 120Ohm. 16x2 LCD - HD44780 compatible - 10kOhm contrast p
 | PC3  | LCD D5 |
 | PC4  | LCD D6 |
 | PC5  | LCD D7 |
+| PC2  | On/Off button |
+| PC3  | 'Pedestrians waiting' button |
 | AREF | 100nF to GND |
 
 
