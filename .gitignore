@@ -7,3 +7,5 @@
 build/
 qm/
 qpn/
+.*
+!/.gitignore
