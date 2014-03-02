@@ -52,7 +52,7 @@ Serial LED resistors - 120Ohm. 16x2 LCD - HD44780 compatible - 10kOhm contrast p
 | ------------- | -------------|
 | PD0  | red LED |
 | PD1  | yellow LED |
-| PD2  | green LED |
+| PD4  | green LED |
 | PD5  | LCD backlight - using NPN transistor |
 | PD6  | idle LED (UV) |
 | PC0  | LCD RS |

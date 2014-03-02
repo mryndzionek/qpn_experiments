@@ -6,6 +6,8 @@ find_program(AVR_SIZE_TOOL avr-size)
 set(CMAKE_SYSTEM_NAME generic)
 set(CMAKE_C_COMPILER   ${AVR_CC})
 set(CMAKE_CXX_COMPILER ${AVR_CXX})
+set(CMAKE_C_FLAGS_MINSIZEREL "-Os -DNDEBUG")
+set(CMAKE_C_FLAGS_MINSIZEDBG "-Os")
 
 # XXX better use a seperate file for non toolchain stuff?
 find_program(AVRDUDE avrdude)

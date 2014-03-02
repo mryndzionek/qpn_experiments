@@ -3,9 +3,9 @@
 #include <avr/io.h>                                              /* AVR I/O */
 #include "lcd.h"
 
-#define LED_OFF(num_)       (PORTD &= ~(1 << (num_)))
-#define LED_ON(num_)        (PORTD |= (1 << (num_)))
-#define LED_TOGGLE(num_)    (PORTD ^= (1 << (num_)))
+#define LED_OFF(num_)       (PORTD &= ~_BV(num_))
+#define LED_ON(num_)        (PORTD |= _BV(num_))
+#define LED_TOGGLE(num_)    (PORTD ^= _BV(num_))
 #define LED_OFF_ALL()       (PORTD = 0x00)
 #define LED_ON_ALL()        (PORTD = 0xFF)
 #define LCD_BL_ON()			LED_ON(5)
@@ -28,9 +28,9 @@ void BSP_init(void) {
 /*..........................................................................*/
 void QF_onStartup(void) {
 	/* set Timer2 in CTC mode, 1/1024 prescaler, start the timer ticking */
-	TIMSK = (1 << OCIE1A);
-	TCCR1B = (1 << WGM12);
-	TCCR1B |= (1 << CS12) | (1 << CS10);
+	TIMSK = _BV(OCIE1A);
+	TCCR1B = _BV(WGM12);
+	TCCR1B |= _BV(CS12) | _BV(CS10);
 	OCR1A = ((F_CPU / BSP_TICKS_PER_SEC / 1024) - 1);          /* keep last */
 }
 /*..........................................................................*/
@@ -68,31 +68,31 @@ void BSP_signalCars(enum BSP_CarsSignal sig) {
 	case CARS_RED:
 		LED_ON(0);
 		LED_OFF(1);
-		LED_OFF(2);
-		lcd_go_line(2);
-		lcd_write("CARS: RED       ");
+		LED_OFF(4);
+		lcd_set_line(1);
+		lcd_putstr("CARS: RED       ");
 		break;
 
 	case CARS_YELLOW:
 		LED_OFF(0);
-		LED_OFF(2);
+		LED_OFF(4);
 		LED_ON(1);
-		lcd_go_line(2);
-		lcd_write("CARS: YELLOW    ");
+		lcd_set_line(1);
+		lcd_putstr("CARS: YELLOW    ");
 		break;
 
 	case CARS_GREEN:
 		LED_OFF(0);
 		LED_OFF(1);
-		LED_ON(2);
-		lcd_go_line(2);
-		lcd_write("CARS: GREEN     ");
+		LED_ON(4);
+		lcd_set_line(1);
+		lcd_putstr("CARS: GREEN     ");
 		break;
 
 	case CARS_BLANK:
 		LED_OFF(0);
 		LED_OFF(1);
-		LED_OFF(2);
+		LED_OFF(4);
 		break;
 	}
 }
@@ -101,14 +101,14 @@ void BSP_signalPeds(enum BSP_PedsSignal sig) {
 	switch (sig) {
 	case PEDS_DONT_WALK:
 		LCD_BL_ON();
-		lcd_go_line(1);
-		lcd_write("***DON'T WALK***");
+		lcd_set_line(0);
+		lcd_putstr("***DON'T WALK***");
 		break;
 	case PEDS_BLANK:
 		break;
 	case PEDS_WALK:
-		lcd_go_line(1);
-		lcd_write("*** WALK NOW ***");
+		lcd_set_line(0);
+		lcd_putstr("*** WALK NOW ***");
 		break;
 	}
 }

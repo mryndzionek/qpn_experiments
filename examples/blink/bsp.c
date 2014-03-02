@@ -2,10 +2,10 @@
 #include "bsp.h"
 #include <avr/io.h>                                              /* AVR I/O */
 
-#define LED_ON(num_)       (PORTD &= ~(1 << (num_)))
-#define LED_OFF(num_)      (PORTD |= (1 << (num_)))
-#define LED_ON_ALL()       (PORTD = 0x00)
-#define LED_OFF_ALL()      (PORTD = 0xFF)
+#define LED_OFF(num_)       (PORTD &= ~(1 << (num_)))
+#define LED_ON(num_)        (PORTD |= (1 << (num_)))
+#define LED_OFF_ALL()       (PORTD = 0x00)
+#define LED_ON_ALL()        (PORTD = 0xFF)
 
 /*..........................................................................*/
 ISR(TIMER1_COMPA_vect) {
@@ -17,14 +17,14 @@ ISR(TIMER1_COMPA_vect) {
 /*..........................................................................*/
 void BSP_init(void) {
 	DDRD  = 0xFF;                    /* All PORTD pins are outputs for LEDs */
-	LED_ON_ALL();                                     /* turn off all LEDs */
+	LED_OFF_ALL();                                     /* turn off all LEDs */
 }
 /*..........................................................................*/
 void QF_onStartup(void) {
 	/* set Timer2 in CTC mode, 1/1024 prescaler, start the timer ticking */
-	TIMSK = (1 << OCIE1A);
-	TCCR1B = (1 << WGM12);
-	TCCR1B |= (1 << CS12) | (1 << CS10);
+	TIMSK = _BV(OCIE1A);
+	TCCR1B = _BV(WGM12);
+	TCCR1B |= _BV(CS12) | _BV(CS10);
 	OCR1A = ((F_CPU / BSP_TICKS_PER_SEC / 1024) - 1);          /* keep last */
 }
 /*..........................................................................*/
