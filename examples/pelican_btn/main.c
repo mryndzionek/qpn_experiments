@@ -19,9 +19,13 @@
 #include "bsp.h"        /* Board Support Package (BSP) */
 #include "pelican_btn.h"    /* application interface */
 
+#ifndef NDEBUG
+Q_DEFINE_THIS_FILE
+#endif
+
 /*..........................................................................*/
 static QEvt l_pelicanQueue[3];
-static QEvt l_pedQueue[2];
+static QEvt l_pedQueue[3];
 
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {

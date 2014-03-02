@@ -313,9 +313,13 @@ extern struct PedTag     AO_Ped;
 #include &quot;bsp.h&quot;        /* Board Support Package (BSP) */
 #include &quot;pelican_btn.h&quot;    /* application interface */
 
+#ifndef NDEBUG
+Q_DEFINE_THIS_FILE
+#endif
+
 /*..........................................................................*/
 static QEvt l_pelicanQueue[3];
-static QEvt l_pedQueue[2];
+static QEvt l_pedQueue[3];
 
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
@@ -341,7 +345,9 @@ int main() {
 #include &quot;bsp.h&quot;
 #include &quot;pelican_btn.h&quot;
 
-/*Q_DEFINE_THIS_FILE*/
+#ifndef NDEBUG
+Q_DEFINE_THIS_FILE
+#endif
 
 enum PelicanTimeouts {  /* various timeouts in ticks */
     CARS_GREEN_MIN_TOUT = BSP_TICKS_PER_SEC * 8, /* min green for cars */
@@ -367,7 +373,9 @@ $define(components::Pelican)</text>
 #include &quot;bsp.h&quot;
 #include &quot;pelican_btn.h&quot;
 
-/*Q_DEFINE_THIS_FILE*/
+#ifndef NDEBUG
+Q_DEFINE_THIS_FILE
+#endif
 
 enum PedTimeouts {                             /* various timeouts in ticks */
     N_ATTEMPTS = 10,                      /* number of PED_WAITING attempts */

@@ -14,10 +14,21 @@
 #define LCD_BL_ON()			LED_ON(5)
 #define LCD_BL_OFF()		LED_OFF(5)
 
+#ifndef NDEBUG
+Q_DEFINE_THIS_FILE
+#endif
+
+static volatile uint8_t press = 0;
+static volatile uint8_t detect = 0;
+
 /*..........................................................................*/
 ISR(INT0_vect)
 {
-	QActive_postISR((QActive *)&AO_Ped, BTN1_SIG, 0);
+	if(!press)
+	{
+		QActive_postISR((QActive *)&AO_Ped, BTN1_SIG, 0);
+		press++;
+	}
 }
 /*..........................................................................*/
 ISR(INT1_vect)
@@ -29,11 +40,18 @@ ISR(TIMER1_COMPA_vect) {
 	/* No need to clear the interrupt source since the Timer1 compare
 	 * interrupt is automatically cleared in hardware when the ISR runs.
 	 */
-    QK_ISR_ENTRY();                     /* inform QK kernel about ISR entry */
+	QK_ISR_ENTRY();                     /* inform QK kernel about ISR entry */
+	if(!detect)
+	{
+		if(press)
+			detect = 1;
+	} else {
+		detect = 0;
+		press = 0;
+	}
+	QF_tick();
 
-    QF_tick();
-
-    QK_ISR_EXIT();                       /* inform QK kernel about ISR exit */
+	QK_ISR_EXIT();                       /* inform QK kernel about ISR exit */
 }
 /*..........................................................................*/
 void BSP_init(void) {
@@ -58,10 +76,10 @@ void QF_onStartup(void) {
 /*..........................................................................*/
 void QK_onIdle(void) {        /* entered with interrupts LOCKED, see NOTE01 */
 
-    QF_INT_DISABLE();
-    LED_ON(6);
-    LED_OFF(6);
-    QF_INT_ENABLE();
+	QF_INT_DISABLE();
+	LED_ON(6);
+	LED_OFF(6);
+	QF_INT_ENABLE();
 
 #ifdef NDEBUG
 
@@ -84,7 +102,7 @@ void Q_onAssert(char const Q_ROM * const Q_ROM_VAR file, int line) {
 	LED_ON_ALL();                                            /* all LEDs on */
 	lcd_clear();
 	lcd_set_line(0);
-	snprintf (buff, sizeof(buff), "file: %s", file);
+	snprintf (buff, sizeof(buff), "file: %d", press);
 	lcd_putstr(buff);
 	lcd_set_line(1);
 	snprintf (buff, sizeof(buff), "line: %d", line);
@@ -123,6 +141,8 @@ void BSP_signalCars(enum BSP_CarsSignal sig) {
 		LED_OFF(0);
 		LED_OFF(1);
 		LED_OFF(4);
+		lcd_set_line(1);
+		lcd_putstr("                ");
 		break;
 	}
 }
@@ -135,6 +155,9 @@ void BSP_signalPeds(enum BSP_PedsSignal sig) {
 		lcd_putstr("***DON'T WALK***");
 		break;
 	case PEDS_BLANK:
+		lcd_set_line(0);
+		lcd_putstr("                ");
+		LCD_BL_OFF();
 		break;
 	case PEDS_WALK:
 		lcd_set_line(0);

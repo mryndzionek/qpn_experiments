@@ -4,7 +4,7 @@
 #define F_CPU                16000000UL
 
                                               /* Sys timer tick per seconds */
-#define BSP_TICKS_PER_SEC    50
+#define BSP_TICKS_PER_SEC    1000
 
 /* street signals ..........................................................*/
 enum BSP_CarsSignal {

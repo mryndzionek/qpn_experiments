@@ -19,7 +19,9 @@
 #include "bsp.h"
 #include "pelican_btn.h"
 
-/*Q_DEFINE_THIS_FILE*/
+#ifndef NDEBUG
+Q_DEFINE_THIS_FILE
+#endif
 
 enum PelicanTimeouts {  /* various timeouts in ticks */
     CARS_GREEN_MIN_TOUT = BSP_TICKS_PER_SEC * 8, /* min green for cars */

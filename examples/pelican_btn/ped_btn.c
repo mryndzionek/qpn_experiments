@@ -19,7 +19,9 @@
 #include "bsp.h"
 #include "pelican_btn.h"
 
-/*Q_DEFINE_THIS_FILE*/
+#ifndef NDEBUG
+Q_DEFINE_THIS_FILE
+#endif
 
 enum PedTimeouts {                             /* various timeouts in ticks */
     N_ATTEMPTS = 10,                      /* number of PED_WAITING attempts */
