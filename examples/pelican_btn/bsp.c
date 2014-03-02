@@ -6,9 +6,9 @@
 #include "lcd.h"
 #include "pelican_btn.h"
 
-#define LED_OFF(num_)       (PORTD &= ~(1 << (num_)))
-#define LED_ON(num_)        (PORTD |= (1 << (num_)))
-#define LED_TOGGLE(num_)    (PORTD ^= (1 << (num_)))
+#define LED_OFF(num_)       (PORTD &= ~_BV(num_))
+#define LED_ON(num_)        (PORTD |= _BV(num_))
+#define LED_TOGGLE(num_)    (PORTD ^= _BV(num_))
 #define LED_OFF_ALL()       (PORTD &= (_BV(PD2) | _BV(PD3)))
 #define LED_ON_ALL()        (PORTD |= ~(_BV(PD2) | _BV(PD3)))
 #define LCD_BL_ON()			LED_ON(5)
@@ -31,7 +31,8 @@ ISR(INT0_vect)
 	if(!onff_press)
 	{
 		QActive_postISR((QActive *)&AO_Pelican, onoff_sig, 0);
-		onff_press++;
+		onff_press = 1;
+		GICR &= ~_BV(INT0);
 		if(onoff_sig == ON_SIG)
 			onoff_sig = OFF_SIG;
 		else
@@ -44,7 +45,8 @@ ISR(INT1_vect)
 	if(!peds_press)
 	{
 		QActive_postISR((QActive *)&AO_Pelican, PEDS_WAITING_SIG, 0);
-		peds_press++;
+		peds_press = 1;
+		GICR &= ~_BV(INT1);
 	}
 }
 /*..........................................................................*/
@@ -56,18 +58,26 @@ ISR(TIMER1_COMPA_vect) {
 	if(!onff_detect)
 	{
 		if(onff_press)
-			onff_detect++;
+			onff_detect = 1;
+
 	} else {
-		onff_detect = 0;
-		onff_press = 0;
+		if(PIND & _BV(PC2)) {
+			onff_detect = 0;
+			onff_press = 0;
+			GICR |= _BV(INT0);
+		}
 	}
 	if(!peds_detect)
 	{
 		if(peds_press)
-			peds_detect++;
+			peds_detect = 1;
+
 	} else {
-		peds_detect = 0;
-		peds_press = 0;
+		if(PIND & _BV(PC3)) {
+			peds_detect = 0;
+			peds_press = 0;
+			GICR |= _BV(INT1);
+		}
 	}
 	QF_tick();
 
@@ -91,7 +101,7 @@ void QF_onStartup(void) {
 
 	GICR = _BV(INT0) | _BV(INT1);					/* Enable INT0 and INT1 */
 	MCUCR = 0x00;               				   /* Trigger INT0 and INT1 */
-	/* on low level */
+												   /* on low level          */
 }
 /*..........................................................................*/
 void QK_onIdle(void) {        /* entered with interrupts LOCKED, see NOTE01 */
