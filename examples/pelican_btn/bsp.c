@@ -28,6 +28,7 @@ static volatile uint8_t peds_detect = 0;
 /*..........................................................................*/
 ISR(INT0_vect)
 {
+	QActive_postISR((QActive *)&AO_Pelican, onoff_sig, 0);
 	if(!onff_press)
 	{
 		QActive_postISR((QActive *)&AO_Pelican, onoff_sig, 0);
@@ -126,13 +127,18 @@ void QK_onIdle(void) {        /* entered with interrupts LOCKED, see NOTE01 */
 /*..........................................................................*/
 void Q_onAssert(char const Q_ROM * const Q_ROM_VAR file, int line) {
 	char buff[16];
+	char fbuf[16];
+
 	(void)file;                                   /* avoid compiler warning */
 	(void)line;                                   /* avoid compiler warning */
 	QF_INT_DISABLE();
 	LED_ON_ALL();                                            /* all LEDs on */
 	lcd_clear();
+
+	memcpy_P(fbuf, file, sizeof(file)+1);
+
 	lcd_set_line(0);
-	snprintf (buff, sizeof(buff), "file: %d", onff_press);
+	snprintf (buff, sizeof(buff), "file: %s", fbuf);
 	lcd_putstr(buff);
 	lcd_set_line(1);
 	snprintf (buff, sizeof(buff), "line: %d", line);

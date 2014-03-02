@@ -81,7 +81,6 @@ Notes and Things to Investigate
 
 * QM tool PNG export does not work on Linux (Mint)
 * Use the latest QP-nano release to test the new QMsm class
-* Investigate the problem with displaying filename on assertion
 
 Contact
 -------
