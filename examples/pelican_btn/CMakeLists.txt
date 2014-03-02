@@ -1,0 +1,13 @@
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories("${CMAKE_SOURCE_DIR}/lcd")
+add_avr_executable(
+    pelican_btn
+    main.c
+    pelican_btn.c
+    bsp.c
+	ped_btn.c
+    ${CMAKE_SOURCE_DIR}/lcd/lcd.c
+    ${CMAKE_SOURCE_DIR}/qpn/source/qepn.c
+    ${CMAKE_SOURCE_DIR}/qpn/source/qfn.c
+    ${CMAKE_SOURCE_DIR}/qpn/source/qkn.c
+)
