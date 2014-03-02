@@ -72,7 +72,7 @@ Implemented examples
 * simple LED blink example - to test the setup and gcc compilation options
 ![blink](images/blink.png?raw=true "simple LED blink")
 
-* Basic 'safety critical' system - PEdestrian "Ight CONtrolled crossing
+* Basic 'safety critical' system - PEdestrian LIght CONtrolled crossing
 ![pelican](images/pelican.png?raw=true "Pelican crossing example")
 		
 
