@@ -69,8 +69,10 @@ Serial LED resistors - 120Ohm. 16x2 LCD - HD44780 compatible - 10kOhm contrast p
 Implemented examples
 --------------------
 
+* simple LED blink example - to test the setup and gcc compilation options
 ![blink](images/blink.png?raw=true "simple LED blink")
 
+* Basic 'safety critical' system - PEdestrian "Ight CONtrolled crossing
 ![pelican](images/pelican.png?raw=true "Pelican crossing example")
 		
 
@@ -79,6 +81,7 @@ Notes and Things to Investigate
 
 * QM tool PNG export does not work on Linux (Mint)
 * Use the latest QP-nano release to test the new QMsm class
+* Investigate the problem with displaying filename on assertion
 
 Contact
 -------

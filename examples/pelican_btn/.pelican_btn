@@ -8,12 +8,9 @@
   <item name="grid">3</item>
  </group>
  <group name="windows">
-  <item id=".::pelican_btn.c">0,0,518,300</item>
+  <item id="components::Pelican::SM">0,0,640,480</item>
+  <item id=".::pelican_btn.h">640,0,518,300</item>
   <item id=".::main.c">0,0,1582,638,*</item>
-  <item id=".::pelican_btn.h">1036,0,518,300</item>
-  <item id=".::ped_btn.c">0,300,518,300</item>
-  <item id="components::Ped::SM">942,158,640,480</item>
-  <item id="components::Pelican::SM">518,158,640,480</item>
  </group>
  <group name="search">
   <item name="options">4129280</item>
