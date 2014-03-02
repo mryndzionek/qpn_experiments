@@ -1,8 +1,10 @@
 #include "qpn_port.h"
 #include "bsp.h"
-#include <avr/io.h>                                              /* AVR I/O */
+#include <avr/io.h>                                             /* AVR I/O */
+#ifndef NDEBUG
 #include <stdlib.h>
 #include <stdio.h>
+#endif
 #include "lcd.h"
 #include "pelican_btn.h"
 
@@ -90,7 +92,7 @@ void QF_onStartup(void) {
 
 	GICR = _BV(INT0) | _BV(INT1);					/* Enable INT0 and INT1 */
 	MCUCR = 0x00;               				   /* Trigger INT0 and INT1 */
-												   /* on low level          */
+	/* on low level          */
 }
 /*..........................................................................*/
 void QK_onIdle(void) {        /* entered with interrupts LOCKED, see NOTE01 */
@@ -114,16 +116,19 @@ void QK_onIdle(void) {        /* entered with interrupts LOCKED, see NOTE01 */
 }
 /*..........................................................................*/
 void Q_onAssert(char const Q_ROM * const Q_ROM_VAR file, int line) {
+#ifndef NDEBUG
 	char buff[16];
 	char fbuf[16];
+#endif
 
 	(void)file;                                   /* avoid compiler warning */
 	(void)line;                                   /* avoid compiler warning */
 	QF_INT_DISABLE();
 	LED_ON_ALL();                                            /* all LEDs on */
 	lcd_clear();
-
-	memcpy_P(fbuf, file, sizeof(file)+1);
+#ifndef NDEBUG
+	memcpy_P(fbuf, file, sizeof(file));
+	fbuf[sizeof(file)+1] = '\0';
 
 	lcd_set_line(0);
 	snprintf (buff, sizeof(buff), "file: %s", fbuf);
@@ -131,6 +136,7 @@ void Q_onAssert(char const Q_ROM * const Q_ROM_VAR file, int line) {
 	lcd_set_line(1);
 	snprintf (buff, sizeof(buff), "line: %d", line);
 	lcd_putstr(buff);
+#endif
 	for (;;) {       /* NOTE: replace the loop with reset for final version */
 	}
 }
@@ -140,7 +146,7 @@ void BSP_signalCars(enum BSP_CarsSignal sig) {
 	case CARS_RED:
 		LED_ON(0);
 		LED_OFF(1);
-		LED_OFF(2);
+		LED_OFF(4);
 		lcd_set_line(1);
 		lcd_putstr("CARS: RED       ");
 		break;

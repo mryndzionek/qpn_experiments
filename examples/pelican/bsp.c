@@ -93,6 +93,8 @@ void BSP_signalCars(enum BSP_CarsSignal sig) {
 		LED_OFF(0);
 		LED_OFF(1);
 		LED_OFF(4);
+		lcd_set_line(1);
+		lcd_putstr("                ");
 		break;
 	}
 }
