@@ -19,20 +19,18 @@ Q_DEFINE_THIS_FILE
 #endif
 
 static volatile uint8_t onoff_sig = OFF_SIG;
-static volatile uint8_t onff_press = 0;
-static volatile uint8_t onff_detect = 0;
+static volatile uint8_t onoff_poll = 0;
 
-static volatile uint8_t peds_press = 0;
-static volatile uint8_t peds_detect = 0;
+static volatile uint8_t peds_poll = 0;
 
 /*..........................................................................*/
 ISR(INT0_vect)
 {
 	QActive_postISR((QActive *)&AO_Pelican, onoff_sig, 0);
-	if(!onff_press)
+	if(!onoff_poll)
 	{
 		QActive_postISR((QActive *)&AO_Pelican, onoff_sig, 0);
-		onff_press = 1;
+		onoff_poll = 1;
 		GICR &= ~_BV(INT0);
 		if(onoff_sig == ON_SIG)
 			onoff_sig = OFF_SIG;
@@ -43,10 +41,10 @@ ISR(INT0_vect)
 /*..........................................................................*/
 ISR(INT1_vect)
 {
-	if(!peds_press)
+	if(!peds_poll)
 	{
 		QActive_postISR((QActive *)&AO_Pelican, PEDS_WAITING_SIG, 0);
-		peds_press = 1;
+		peds_poll = 1;
 		GICR &= ~_BV(INT1);
 	}
 }
@@ -56,27 +54,17 @@ ISR(TIMER1_COMPA_vect) {
 	 * interrupt is automatically cleared in hardware when the ISR runs.
 	 */
 	QK_ISR_ENTRY();                     /* inform QK kernel about ISR entry */
-	if(!onff_detect)
+	if(onoff_poll)
 	{
-		if(onff_press)
-			onff_detect = 1;
-
-	} else {
 		if(PIND & _BV(PC2)) {
-			onff_detect = 0;
-			onff_press = 0;
+			onoff_poll = 0;
 			GICR |= _BV(INT0);
 		}
 	}
-	if(!peds_detect)
+	if(peds_poll)
 	{
-		if(peds_press)
-			peds_detect = 1;
-
-	} else {
 		if(PIND & _BV(PC3)) {
-			peds_detect = 0;
-			peds_press = 0;
+			peds_poll = 0;
 			GICR |= _BV(INT1);
 		}
 	}
