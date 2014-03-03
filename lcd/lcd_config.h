@@ -1,7 +1,3 @@
-/*
- * Define pins and ports here
- */
-
 #define LCD_MODE_4BIT
 #define LCD_PORT PORTC
 #define LCD_DDR DDRC
