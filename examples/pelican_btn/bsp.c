@@ -39,6 +39,7 @@ ISR(INT0_vect)
             else
                 onoff_sig = ON_SIG;
         }
+
 }
 /*..........................................................................*/
 ISR(INT1_vect)
@@ -118,6 +119,7 @@ void Q_onAssert(char const Q_ROM * const Q_ROM_VAR file, int line) {
 #ifndef NDEBUG
     char buff[16];
     char fbuf[16];
+    size_t n;
 #endif
 
     (void)file;                                   /* avoid compiler warning */
@@ -126,8 +128,11 @@ void Q_onAssert(char const Q_ROM * const Q_ROM_VAR file, int line) {
     LED_ON_ALL();                                            /* all LEDs on */
     lcd_clear();
 #ifndef NDEBUG
-    memcpy_P(fbuf, file, sizeof(file));
-    fbuf[sizeof(file)+1] = '\0';
+    n = strlen_P(file);
+    if(n > 15)
+        n = 15;
+    memcpy_P(fbuf, file, n);
+    fbuf[n] = '\0';
 
     lcd_set_line(0);
     snprintf (buff, sizeof(buff), "file: %s", fbuf);
