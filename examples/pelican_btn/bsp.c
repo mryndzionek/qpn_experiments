@@ -11,8 +11,8 @@
 #define LED_OFF(num_)       (PORTD &= ~_BV(num_))
 #define LED_ON(num_)        (PORTD |= _BV(num_))
 #define LED_TOGGLE(num_)    (PORTD ^= _BV(num_))
-#define LED_OFF_ALL()       (PORTD &= (_BV(PD2) | _BV(PD3)))
-#define LED_ON_ALL()        (PORTD |= ~(_BV(PD2) | _BV(PD3)))
+#define LED_OFF_ALL()       PORTD = 0x00
+#define LED_ON_ALL()        (PORTD = ~(_BV(PD2) | _BV(PD3)))
 #define LCD_BL_ON()			LED_ON(5)
 #define LCD_BL_OFF()		LED_OFF(5)
 
@@ -77,7 +77,6 @@ ISR(TIMER1_COMPA_vect) {
 /*..........................................................................*/
 void BSP_init(void) {
 	DDRD = 0xFF & ~(_BV(PD2) | _BV(PD3));
-	PORTD = _BV(PD2) | _BV(PD3);						         /* pullups */
 	LED_OFF_ALL();                                     /* turn off all LEDs */
 	lcd_init();
 	LCD_BL_ON();                                   /* turn LCD backlight on */
