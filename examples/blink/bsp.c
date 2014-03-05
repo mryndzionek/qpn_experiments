@@ -30,8 +30,8 @@ void QF_onStartup(void) {
 /*..........................................................................*/
 void QF_onIdle(void) {        /* entered with interrupts LOCKED, see NOTE01 */
 
-    LED_ON(6);
-    LED_OFF(6);
+    LED_ON(5);
+    LED_OFF(5);
 
 #ifdef NDEBUG
 

@@ -8,8 +8,6 @@
 #define LED_TOGGLE(num_)    (PORTD ^= _BV(num_))
 #define LED_OFF_ALL()       (PORTD = 0x00)
 #define LED_ON_ALL()        (PORTD = 0xFF)
-#define LCD_BL_ON()			LED_ON(5)
-#define LCD_BL_OFF()		LED_OFF(5)
 
 /*..........................................................................*/
 ISR(TIMER1_COMPA_vect) {
@@ -23,7 +21,6 @@ void BSP_init(void) {
     DDRD  = 0xFF;                    /* All PORTD pins are outputs for LEDs */
     LED_OFF_ALL();                                     /* turn off all LEDs */
     lcd_init();
-    LCD_BL_ON();                                   /* turn LCD backlight on */
 }
 /*..........................................................................*/
 void QF_onStartup(void) {
@@ -36,8 +33,8 @@ void QF_onStartup(void) {
 /*..........................................................................*/
 void QF_onIdle(void) {        /* entered with interrupts LOCKED, see NOTE01 */
 
-    LED_ON(6);
-    LED_OFF(6);
+    LED_ON(5);
+    LED_OFF(5);
 
 #ifdef NDEBUG
 
@@ -102,7 +99,6 @@ void BSP_signalCars(enum BSP_CarsSignal sig) {
 void BSP_signalPeds(enum BSP_PedsSignal sig) {
     switch (sig) {
         case PEDS_DONT_WALK:
-            LCD_BL_ON();
             lcd_set_line(0);
             lcd_putstr("***DON'T WALK***");
             break;

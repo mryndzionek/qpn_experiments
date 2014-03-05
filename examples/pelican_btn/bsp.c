@@ -13,8 +13,6 @@
 #define LED_TOGGLE(num_)        (PORTD ^= _BV(num_))
 #define LED_OFF_ALL()           PORTD = 0x00
 #define LED_ON_ALL()            (PORTD = ~(_BV(PD2) | _BV(PD3)))
-#define LCD_BL_ON()             LED_ON(5)
-#define LCD_BL_OFF()		LED_OFF(5)
 
 #ifndef NDEBUG
 Q_DEFINE_THIS_FILE
@@ -80,7 +78,6 @@ void BSP_init(void) {
     DDRD = 0xFF & ~(_BV(PD2) | _BV(PD3));
     LED_OFF_ALL();                                     /* turn off all LEDs */
     lcd_init();
-    LCD_BL_ON();                                   /* turn LCD backlight on */
 }
 /*..........................................................................*/
 void QF_onStartup(void) {
@@ -98,8 +95,8 @@ void QF_onStartup(void) {
 void QK_onIdle(void) {        /* entered with interrupts LOCKED, see NOTE01 */
 
     QF_INT_DISABLE();
-    LED_ON(6);
-    LED_OFF(6);
+    LED_ON(5);
+    LED_OFF(5);
     QF_INT_ENABLE();
 
 #ifdef NDEBUG
