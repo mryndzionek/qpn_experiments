@@ -28,6 +28,9 @@ Q_DEFINE_THIS_FILE
 typedef struct CapstoneTag {
 /* protected: */
     QActive super;
+
+/* public: */
+    uint8_t bar;
 } Capstone;
 
 /* protected: */
@@ -45,22 +48,22 @@ void Capstone_ctor(void) {
     QActive_ctor(&AO_Capstone.super, Q_STATE_CAST(&Capstone_initial));
 }
 /* @(/1/0) .................................................................*/
-/* @(/1/0/0) ...............................................................*/
-/* @(/1/0/0/0) */
+/* @(/1/0/1) ...............................................................*/
+/* @(/1/0/1/0) */
 static QState Capstone_initial(Capstone * const me) {
     return Q_TRAN(&Capstone_btn1_up);
 }
-/* @(/1/0/0/1) .............................................................*/
+/* @(/1/0/1/1) .............................................................*/
 static QState Capstone_btn1_down(Capstone * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/0/1) */
+        /* @(/1/0/1/1) */
         case Q_ENTRY_SIG: {
             BSP_signalLeds(DOWN);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/0/1/0) */
+        /* @(/1/0/1/1/0) */
         case BTN1_UP_SIG: {
             status_ = Q_TRAN(&Capstone_btn1_up);
             break;
@@ -72,17 +75,19 @@ static QState Capstone_btn1_down(Capstone * const me) {
     }
     return status_;
 }
-/* @(/1/0/0/2) .............................................................*/
+/* @(/1/0/1/2) .............................................................*/
 static QState Capstone_btn1_up(Capstone * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/0/2) */
+        /* @(/1/0/1/2) */
         case Q_ENTRY_SIG: {
             BSP_signalLeds(UP);
+            BSP_progressBar(me->bar, 40, 8);
+            me->bar++;
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/0/2/0) */
+        /* @(/1/0/1/2/0) */
         case BTN1_DOWN_SIG: {
             status_ = Q_TRAN(&Capstone_btn1_down);
             break;

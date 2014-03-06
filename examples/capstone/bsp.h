@@ -9,7 +9,9 @@ enum BSP_LedSignal {
     UP,DOWN
 };
 
+void BSP_init(void);
 void BSP_signalLeds(enum BSP_LedSignal sig);
+void BSP_progressBar(uint8_t progress, uint8_t maxprogress, uint8_t length);
 
 #define BSP_showState(state_) ((void)0)
 

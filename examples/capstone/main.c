@@ -19,7 +19,7 @@
 #include "bsp.h"        /* Board Support Package (BSP) */
 #include "capstone.h"   /* application interface */
 /*..........................................................................*/
-static QEvt l_capstoneQueue[1];
+static QEvt l_capstoneQueue[5];
 
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {

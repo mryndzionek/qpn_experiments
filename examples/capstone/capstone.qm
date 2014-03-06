@@ -3,6 +3,7 @@
  <framework name="qpn"/>
  <package name="AOs" stereotype="0x02">
   <class name="Capstone" superclass="qpn::QActive">
+   <attribute name="bar" type="uint8_t" visibility="0x00" properties="0x00"/>
    <statechart>
     <initial target="../2">
      <initial_glyph conn="42,6,5,0,12,4">
@@ -12,18 +13,20 @@
     <state name="btn1_down">
      <entry>BSP_signalLeds(DOWN);</entry>
      <tran trig="BTN1_UP" target="../../2">
-      <tran_glyph conn="16,14,3,1,43">
+      <tran_glyph conn="14,14,3,1,45">
        <action box="0,-2,9,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="16,9,16,15">
+     <state_glyph node="14,9,16,15">
       <entry box="1,2,5,2"/>
      </state_glyph>
     </state>
     <state name="btn1_up">
-     <entry>BSP_signalLeds(UP);</entry>
+     <entry>BSP_signalLeds(UP);
+BSP_progressBar(me-&gt;bar, 40, 8);
+me-&gt;bar++;</entry>
      <tran trig="BTN1_DOWN" target="../../1">
-      <tran_glyph conn="59,20,1,3,-43">
+      <tran_glyph conn="59,20,1,3,-45">
        <action box="-11,-2,11,2"/>
       </tran_glyph>
      </tran>
@@ -46,7 +49,7 @@
 #include &quot;bsp.h&quot;        /* Board Support Package (BSP) */
 #include &quot;capstone.h&quot;   /* application interface */
 /*..........................................................................*/
-static QEvt l_capstoneQueue[1];
+static QEvt l_capstoneQueue[5];
 
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {

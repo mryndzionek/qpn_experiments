@@ -8,6 +8,27 @@
 #include "lcd.h"
 #include "capstone.h"
 
+#define PROGRESSPIXELS_PER_CHAR 6
+
+const uint8_t PROGMEM bar0[] = {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+const uint8_t PROGMEM bar1[] = {
+        0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00
+};
+const uint8_t PROGMEM bar2[] = {
+        0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x00
+};
+const uint8_t PROGMEM bar3[] = {
+        0x1C, 0x1C, 0x1C, 0x1C, 0x1C, 0x1C, 0x1C, 0x00
+};
+const uint8_t PROGMEM bar4[] = {
+        0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x00
+};
+const uint8_t PROGMEM bar5[] = {
+        0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x00
+};
+
 #define LED_OFF(num_)       (PORTD &= ~_BV(num_))
 #define LED_ON(num_)        (PORTD |= _BV(num_))
 #define LED_TOGGLE(num_)    (PORTD ^= _BV(num_))
@@ -70,6 +91,13 @@ void BSP_init(void) {
     DDRD = 0xFF & ~(_BV(PD2) | _BV(PD3));
     LED_OFF_ALL();                                     /* turn off all LEDs */
     lcd_init();
+
+    lcd_customchar_P(0, bar0);
+    lcd_customchar_P(1, bar1);
+    lcd_customchar_P(2, bar2);
+    lcd_customchar_P(3, bar3);
+    lcd_customchar_P(4, bar4);
+    lcd_customchar_P(5, bar5);
 }
 /*..........................................................................*/
 void QF_onStartup(void) {
@@ -152,4 +180,46 @@ void BSP_signalLeds(enum BSP_LedSignal sig) {
     }
 
 }
+/*..........................................................................*/
+void BSP_progressBar(uint8_t progress, uint8_t maxprogress, uint8_t length) {
+        uint8_t i;
+        uint16_t pixelprogress;
+        uint8_t c;
+        char buff[16];
 
+        pixelprogress = ((progress*(length*PROGRESSPIXELS_PER_CHAR))/maxprogress);
+
+        // print exactly "length" characters
+        for(i=0; i<length; i++)
+        {
+                // check if this is a full block, or partial or empty
+                // (u16) cast is needed to avoid sign comparison warning
+                if( ((i*(uint16_t)PROGRESSPIXELS_PER_CHAR)+5) > pixelprogress )
+                {
+                        // this is a partial or empty block
+                        if( ((i*(uint16_t)PROGRESSPIXELS_PER_CHAR)) > pixelprogress )
+                        {
+                                // this is an empty block
+                                // use space character?
+                                c = 0;
+                        }
+                        else
+                        {
+                                // this is a partial block
+                                c = pixelprogress % PROGRESSPIXELS_PER_CHAR;
+                        }
+                }
+                else
+                {
+                        // this is a full block
+                        c = 5;
+                }
+
+                // write character to display
+                buff[i] = c;
+        }
+
+        lcd_set_line(1);
+        lcd_putstr(buff);
+
+}
