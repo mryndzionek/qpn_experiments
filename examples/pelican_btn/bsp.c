@@ -26,7 +26,6 @@ static volatile uint8_t peds_poll = 0;
 /*..........................................................................*/
 ISR(INT0_vect)
 {
-    QActive_postISR((QActive *)&AO_Pelican, onoff_sig, 0);
     if(!onoff_poll)
         {
             QActive_postISR((QActive *)&AO_Pelican, onoff_sig, 0);
