@@ -4,7 +4,6 @@
  <framework name="qpn"/>
  <package name="AOs" stereotype="0x02">
   <class name="Blink" superclass="qpn::QActive">
-   <attribute name="attr1" type="uint8_t" visibility="0x02" properties="0x00"/>
    <statechart>
     <initial target="../1">
      <initial_glyph conn="6,4,5,0,12,2">

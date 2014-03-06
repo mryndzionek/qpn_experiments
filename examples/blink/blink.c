@@ -28,9 +28,6 @@
 typedef struct BlinkTag {
 /* protected: */
     QActive super;
-
-/* private: */
-    uint8_t attr1;
 } Blink;
 
 /* protected: */
@@ -48,29 +45,29 @@ void Blink_ctor(void) {
     QActive_ctor(&AO_Blink.super, Q_STATE_CAST(&Blink_initial));
 }
 /* @(/1/0) .................................................................*/
-/* @(/1/0/1) ...............................................................*/
-/* @(/1/0/1/0) */
+/* @(/1/0/0) ...............................................................*/
+/* @(/1/0/0/0) */
 static QState Blink_initial(Blink * const me) {
     return Q_TRAN(&Blink_ON);
 }
-/* @(/1/0/1/1) .............................................................*/
+/* @(/1/0/0/1) .............................................................*/
 static QState Blink_ON(Blink * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/1/1) */
+        /* @(/1/0/0/1) */
         case Q_ENTRY_SIG: {
             BSP_ledOn();
             QActive_arm((QActive *)me, BLINK_TOUT);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/1/1) */
+        /* @(/1/0/0/1) */
         case Q_EXIT_SIG: {
             QActive_disarm((QActive *)me);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/1/1/0) */
+        /* @(/1/0/0/1/0) */
         case Q_TIMEOUT_SIG: {
             status_ = Q_TRAN(&Blink_OFF);
             break;
@@ -82,24 +79,24 @@ static QState Blink_ON(Blink * const me) {
     }
     return status_;
 }
-/* @(/1/0/1/2) .............................................................*/
+/* @(/1/0/0/2) .............................................................*/
 static QState Blink_OFF(Blink * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/1/2) */
+        /* @(/1/0/0/2) */
         case Q_ENTRY_SIG: {
             BSP_ledOff();
             QActive_arm((QActive *)me, BLINK_TOUT);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/1/2) */
+        /* @(/1/0/0/2) */
         case Q_EXIT_SIG: {
             QActive_disarm((QActive *)me);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/1/2/0) */
+        /* @(/1/0/0/2/0) */
         case Q_TIMEOUT_SIG: {
             status_ = Q_TRAN(&Blink_ON);
             break;
