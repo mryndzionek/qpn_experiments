@@ -1,0 +1,11 @@
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories("${CMAKE_SOURCE_DIR}/lcd")
+add_avr_executable(
+    capstone
+    main.c
+    capstone.c
+    bsp.c
+    ${CMAKE_SOURCE_DIR}/lcd/lcd.c
+    ${CMAKE_SOURCE_DIR}/qpn/source/qepn.c
+    ${CMAKE_SOURCE_DIR}/qpn/source/qfn.c
+)

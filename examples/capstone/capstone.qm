@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="3.0.1">
+ <framework name="qpn"/>
+ <package name="AOs" stereotype="0x02">
+  <class name="Capstone" superclass="qpn::QActive">
+   <statechart>
+    <initial target="../2">
+     <initial_glyph conn="42,6,5,0,12,4">
+      <action box="0,-2,6,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="btn1_down">
+     <entry>BSP_signalLeds(DOWN);</entry>
+     <tran trig="BTN1_UP" target="../../2">
+      <tran_glyph conn="16,14,3,1,43">
+       <action box="0,-2,9,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="16,9,16,15">
+      <entry box="1,2,5,2"/>
+     </state_glyph>
+    </state>
+    <state name="btn1_up">
+     <entry>BSP_signalLeds(UP);</entry>
+     <tran trig="BTN1_DOWN" target="../../1">
+      <tran_glyph conn="59,20,1,3,-43">
+       <action box="-11,-2,11,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="40,10,19,14">
+      <entry box="1,2,5,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="80,50"/>
+   </statechart>
+  </class>
+  <attribute name="AO_capstone" type="QActive *const" visibility="0x00" properties="0x00"/>
+  <operation name="Capstone_ctor" type="void" visibility="0x00" properties="0x00">
+   <documentation>constructor</documentation>
+   <code>QActive_ctor(&amp;AO_Capstone.super, Q_STATE_CAST(&amp;Capstone_initial));</code>
+  </operation>
+ </package>
+ <directory name=".">
+  <file name="main.c">
+   <text>#include &quot;qpn_port.h&quot;   /* QP-nano port */
+#include &quot;bsp.h&quot;        /* Board Support Package (BSP) */
+#include &quot;capstone.h&quot;   /* application interface */
+/*..........................................................................*/
+static QEvt l_capstoneQueue[1];
+
+/* QF_active[] array defines all active object control blocks --------------*/
+QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
+    { (QActive *)0,           (QEvt *)0,      0                     },
+    { (QActive *)&amp;AO_Capstone, l_capstoneQueue, Q_DIM(l_capstoneQueue)     }
+};
+
+/* make sure that the QF_active[] array matches QF_MAX_ACTIVE in qpn_port.h */
+Q_ASSERT_COMPILE(QF_MAX_ACTIVE == Q_DIM(QF_active) - 1);
+
+/*..........................................................................*/
+int main(void)
+{
+    Capstone_ctor();    /* instantiate the Blink AO */
+    BSP_init();      /* initialize the board */
+
+    return QF_run(); /* transfer control to QF-nano */
+}</text>
+  </file>
+  <file name="capstone.c">
+   <text>#include &quot;qpn_port.h&quot;
+#include &quot;bsp.h&quot;
+#include &quot;capstone.h&quot;
+
+#ifndef NDEBUG
+Q_DEFINE_THIS_FILE
+#endif
+
+/* Pelican class declaration -----------------------------------------------*/
+$declare(AOs::Capstone)
+
+/* Global objects ----------------------------------------------------------*/
+Capstone AO_Capstone;     /* the single instance of the Blink active object */
+
+/* Capstone class definition -----------------------------------------------*/
+$define(AOs::Capstone_ctor)
+$define(AOs::Capstone)</text>
+  </file>
+  <file name="capstone.h">
+   <text>#ifndef __CAPSTONE_H__
+#define __CAPSTONE_H__
+
+enum CapstoneSignals {
+    BTN1_DOWN_SIG = Q_USER_SIG,
+    BTN1_UP_SIG,
+    BTN2_DOWN_SIG,
+    BTN2_UP_SIG
+};
+
+// active objects ................................................*/
+$declare(AOs::Capstone_ctor)
+
+extern struct CapstoneTag AO_Capstone;
+
+#endif /* __CAPSTONE_H__ */</text>
+  </file>
+ </directory>
+</model>
