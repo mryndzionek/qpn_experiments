@@ -3,8 +3,8 @@
 #include <avr/io.h>                                              /* AVR I/O */
 #ifndef NDEBUG
 #include <stdlib.h>
-#include <stdio.h>
 #endif
+#include <stdio.h>
 #include "lcd.h"
 #include "capstone.h"
 
@@ -90,6 +90,12 @@ ISR(TIMER1_COMPA_vect) {
 void BSP_init(void) {
     DDRD = 0xFF & ~(_BV(PD2) | _BV(PD3));
     LED_OFF_ALL();                                     /* turn off all LEDs */
+
+    // Select Vref=AVcc
+    ADMUX |= (1<<REFS0);
+    //set prescaller to 128 and enable ADC - 125kHz clock
+    ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN);
+
     lcd_init();
 
     lcd_customchar_P(0, bar0);
@@ -182,44 +188,60 @@ void BSP_signalLeds(enum BSP_LedSignal sig) {
 }
 /*..........................................................................*/
 void BSP_progressBar(uint8_t progress, uint8_t maxprogress, uint8_t length) {
-        uint8_t i;
-        uint16_t pixelprogress;
-        uint8_t c;
-        char buff[16];
+    uint8_t i;
+    uint16_t pixelprogress;
+    uint8_t c;
+    char buff[17];
 
-        pixelprogress = ((progress*(length*PROGRESSPIXELS_PER_CHAR))/maxprogress);
+    pixelprogress = ((progress*(length*PROGRESSPIXELS_PER_CHAR))/maxprogress);
 
-        // print exactly "length" characters
-        for(i=0; i<length; i++)
+    // print exactly "length" characters
+    for(i=0; i<length; i++)
         {
-                // check if this is a full block, or partial or empty
-                // (u16) cast is needed to avoid sign comparison warning
-                if( ((i*(uint16_t)PROGRESSPIXELS_PER_CHAR)+5) > pixelprogress )
+            // check if this is a full block, or partial or empty
+            // (u16) cast is needed to avoid sign comparison warning
+            if( ((i*(uint16_t)PROGRESSPIXELS_PER_CHAR)+5) > pixelprogress )
                 {
-                        // this is a partial or empty block
-                        if( ((i*(uint16_t)PROGRESSPIXELS_PER_CHAR)) > pixelprogress )
+                    // this is a partial or empty block
+                    if( ((i*(uint16_t)PROGRESSPIXELS_PER_CHAR)) >= pixelprogress )
                         {
-                                // this is an empty block
-                                // use space character?
-                                c = 0;
+                            // this is an empty block
+                            // use space character?
+                            c = ' ';
                         }
-                        else
+                    else
                         {
-                                // this is a partial block
-                                c = pixelprogress % PROGRESSPIXELS_PER_CHAR;
+                            // this is a partial block
+                            c = pixelprogress % PROGRESSPIXELS_PER_CHAR;
                         }
                 }
-                else
+            else
                 {
-                        // this is a full block
-                        c = 5;
+                    // this is a full block
+                    c = 5;
                 }
 
-                // write character to display
-                buff[i] = c;
+            // write character to display
+            buff[i] = c;
         }
+    buff[16] = 0;
+    lcd_set_line(0);
+    lcd_putstr(buff);
 
-        lcd_set_line(1);
-        lcd_putstr(buff);
+    lcd_set_line(1);
+    snprintf (buff, sizeof(buff), "%d     ", progress);
+    lcd_putstr(buff);
 
+}
+
+uint8_t BSP_readADC(uint8_t channel)
+{
+    //select ADC channel with safety mask
+    ADMUX = (ADMUX & 0xF0) | (channel & 0x0F);
+    //single conversion mode
+    ADCSRA |= (1<<ADSC);
+    // wait until ADC conversion is complete
+    while( ADCSRA & (1<<ADSC) );
+
+    return ADC >> 2;
 }
