@@ -47,6 +47,17 @@ Hardware setup
 
 ATmega32A on a breadboard. 16MHz crystal. Fuses set to: `-U lfuse:w:0xff:m -U hfuse:w:0xd9:m`.
 Serial LED resistors - 120Ohm. 16x2 LCD - HD44780 compatible - 10kOhm contrast pot.
+AREF connected to GND via 100nF cap.
+Detailed function of each peripheral is different for each example.
+
+Implemented examples
+--------------------
+
+* simple LED blink example - to test the setup and gcc compilation options
+![blink](images/blink.png?raw=true "simple LED blink")
+
+* basic 'safety critical' system - **PE**destrian **LI**ght **CON**trolled crossing
+![pelican](images/pelican.png?raw=true "Pelican crossing example")
 
 | Pin  | Peripheral|
 | ------------- | -------------|
@@ -63,18 +74,6 @@ Serial LED resistors - 120Ohm. 16x2 LCD - HD44780 compatible - 10kOhm contrast p
 | PC5  | LCD D7 |
 | PC2  | On/Off button |
 | PC3  | 'Pedestrians waiting' button |
-| AREF | 100nF to GND |
-
-
-Implemented examples
---------------------
-
-* simple LED blink example - to test the setup and gcc compilation options
-![blink](images/blink.png?raw=true "simple LED blink")
-
-* basic 'safety critical' system - **PE**destrian **LI**ght **CON**trolled crossing
-![pelican](images/pelican.png?raw=true "Pelican crossing example")
-		
 
 Notes and Things to Investigate
 -------------------------------
