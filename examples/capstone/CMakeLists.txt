@@ -4,8 +4,10 @@ add_avr_executable(
     capstone
     main.c
     capstone.c
+    alarm.c
     bsp.c
 	helpers.c
+	scuba.c
     ${CMAKE_SOURCE_DIR}/lcd/lcd.c
     ${CMAKE_SOURCE_DIR}/qpn/source/qepn.c
     ${CMAKE_SOURCE_DIR}/qpn/source/qfn.c

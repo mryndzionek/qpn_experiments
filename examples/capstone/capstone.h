@@ -19,6 +19,7 @@
 #define __CAPSTONE_H__
 
 #include "helpers.h"
+#include "scuba.h"
 
 #define MID_A2D_SCALE           511
 
@@ -54,6 +55,8 @@
 #define LCD_PRESSURE_LIMIT      40
 #define LCD_ASCENT_RATE_LIMIT   40
 
+#define LCD_ASCENT_RATE_LIMIT   40
+
 #define GAS_SAFETY_MARGIN  \
     (((uint32_t)CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE) / 5)
 
@@ -71,11 +74,21 @@ enum CapstoneSignals {
     BTN2_UP_SIG,
     HEARTBEAT_SIG,
     DT_TTS_SIG,
-    ASCENT_RATE_ADC_SIG
+    ASCENT_RATE_ADC_SIG,
+    ALARM_REQUEST_SIG,
+    ALARM_SILENCE_SIG
+};
+
+enum AlarmTypes {          /* arranged in ascending order of alarm priority */
+    ALL_ALARMS,
+    DEPTH_ALARM,
+    ASCENT_RATE_ALARM,
+    OUT_OF_AIR_ALARM,
+    MAX_ALARM                                           /* keep always last */
 };
 
 // active objects ................................................*/
-/* @(/1/2) .................................................................*/
+/* @(/1/4) .................................................................*/
 void Capstone_ctor(void);
 
 

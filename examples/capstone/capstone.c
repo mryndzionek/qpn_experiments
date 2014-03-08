@@ -18,6 +18,7 @@
 #include "qpn_port.h"
 #include "bsp.h"
 #include "capstone.h"
+#include "alarm.h"
 
 #ifndef NDEBUG
 Q_DEFINE_THIS_FILE
@@ -56,10 +57,10 @@ static QState Capstone_diving(Capstone * const me);
 
 
 /* Global objects ----------------------------------------------------------*/
-Capstone AO_Capstone;     /* the single instance of the Blink active object */
+Capstone AO_Capstone;
 
 /* Capstone class definition -----------------------------------------------*/
-/* @(/1/2) .................................................................*/
+/* @(/1/4) .................................................................*/
 void Capstone_ctor(void) {
     QActive_ctor(&AO_Capstone.super, Q_STATE_CAST(&Capstone_initial));
 }
@@ -122,10 +123,7 @@ static QState Capstone_always(Capstone * const me) {
     switch (Q_SIG(me)) {
         /* @(/1/0/13/1/0) */
         case HEARTBEAT_SIG: {
-            //select ADC channel with safety mask
-            ADMUX = (ADMUX & 0xF0) | (ADC_CHANNEL & 0x0F);
-            //single conversion mode
-            ADCSRA |= _BV(ADSC);
+            BSP_ADCstart();
             BSP_ledOn(ADC_LED);
             if (me->heartbeat_led_sel) {
                 BSP_ledOn(HEARTBEAT_LED);
@@ -213,6 +211,9 @@ static QState Capstone_surfaced(Capstone * const me) {
             me->ascent_rate_in_mm_per_sec =
                 ASCENT_RATE_MM_PER_MIN((uint16_t)Q_PAR(me));
 
+            me->depth_in_mm -=
+                depth_change_in_mm(me->ascent_rate_in_mm_per_sec);
+
             /* @(/1/0/13/1/3/2/0) */
             if (me->ascent_rate_in_mm_per_sec >= 0) {
                 me->ascent_rate_in_mm_per_sec = 0;
@@ -283,6 +284,78 @@ static QState Capstone_diving(Capstone * const me) {
         case Q_ENTRY_SIG: {
             me->start_dive_time_in_ticks = BSP_get_ticks();
             status_ = Q_HANDLED();
+            break;
+        }
+        /* @(/1/0/13/1/4) */
+        case Q_EXIT_SIG: {
+            QActive_post((QActive *)&AO_AlarmMgr, ALARM_SILENCE_SIG, ALL_ALARMS);
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* @(/1/0/13/1/4/0) */
+        case ASCENT_RATE_ADC_SIG: {
+                        BSP_ledOff(ADC_LED);
+
+                        me->ascent_rate_in_mm_per_sec =
+                            ASCENT_RATE_MM_PER_MIN((uint16_t)Q_PAR(me));
+
+                                        /* integrate the depth based on the ascent rate */
+                        me->depth_in_mm -=
+                            depth_change_in_mm(me->ascent_rate_in_mm_per_sec);
+            /* @(/1/0/13/1/4/0/0) */
+            if (me->depth_in_mm > 0) {
+                                uint32_t consumed_gas_in_cl = gas_rate_in_cl(me->depth_in_mm);
+
+                                if (me->gas_in_cylinder_in_cl > consumed_gas_in_cl) {
+                                    me->gas_in_cylinder_in_cl -= consumed_gas_in_cl;
+                                }
+                                else {
+                                    me->gas_in_cylinder_in_cl = 0;
+                                }
+
+                                me->dive_time_in_ticks = BSP_get_ticks()
+                                                         - me->start_dive_time_in_ticks;
+
+                                me->tts_in_ticks = me->depth_in_mm * ((uint32_t)60 * BSP_TICKS_PER_SEC)
+                                                   / ASCENT_RATE_LIMIT;
+
+                                Capstone_display_depth(me);
+                                Capstone_display_assent(me);
+                                Capstone_display_pressure(me);
+
+                                                           /* check the OUT_OF_AIR_ALARM... */
+                                if (me->gas_in_cylinder_in_cl <
+                                    gas_to_surface_in_cl(me->depth_in_mm) + GAS_SAFETY_MARGIN)
+                                {
+                                    QActive_post((QActive *)&AO_AlarmMgr, ALARM_REQUEST_SIG, OUT_OF_AIR_ALARM);
+                                }
+                                else {
+                                    QActive_post((QActive *)&AO_AlarmMgr, ALARM_SILENCE_SIG, OUT_OF_AIR_ALARM);
+                                }
+
+                                                          /* check the ASCENT_RATE_ALARM... */
+                                if (me->ascent_rate_in_mm_per_sec > ASCENT_RATE_LIMIT) {
+                                    QActive_post((QActive *)&AO_AlarmMgr, ALARM_REQUEST_SIG, ASCENT_RATE_ALARM);
+                                }
+                                else {
+                                    QActive_post((QActive *)&AO_AlarmMgr, ALARM_SILENCE_SIG, ASCENT_RATE_ALARM);
+                                }
+
+                                                                /* check the DEPTH_ALARM... */
+                                if (me->depth_in_mm > MAXIMUM_DEPTH_IN_MM) {
+                                    QActive_post((QActive *)&AO_AlarmMgr, ALARM_REQUEST_SIG, DEPTH_ALARM);
+                                }
+                                else {
+                                    QActive_post((QActive *)&AO_AlarmMgr, ALARM_SILENCE_SIG, DEPTH_ALARM);
+                                }
+
+                                return Q_HANDLED();
+                status_ = Q_HANDLED();
+            }
+            /* @(/1/0/13/1/4/0/1) */
+            else {
+                status_ = Q_TRAN(&Capstone_surfaced);
+            }
             break;
         }
         default: {

@@ -65,10 +65,7 @@ BSP_lcdStr(LCD_DEPTH_X, LCD_DEPTH_Y, &quot;Dpt&quot;);</action>
     </initial>
     <state name="always">
      <tran trig="HEARTBEAT">
-      <action>//select ADC channel with safety mask
-ADMUX = (ADMUX &amp; 0xF0) | (ADC_CHANNEL &amp; 0x0F);
-//single conversion mode
-ADCSRA |= _BV(ADSC);
+      <action>BSP_ADCstart();
 BSP_ledOn(ADC_LED);
 if (me-&gt;heartbeat_led_sel) {
     BSP_ledOn(HEARTBEAT_LED);
@@ -135,6 +132,9 @@ Capstone_display_assent(me);</entry>
 
 me-&gt;ascent_rate_in_mm_per_sec =
     ASCENT_RATE_MM_PER_MIN((uint16_t)Q_PAR(me));
+
+me-&gt;depth_in_mm -=
+    depth_change_in_mm(me-&gt;ascent_rate_in_mm_per_sec);
 </action>
        <choice>
         <guard>me-&gt;ascent_rate_in_mm_per_sec &gt;= 0</guard>
@@ -149,7 +149,7 @@ me-&gt;ascent_rate_in_mm_per_sec =
          <action box="-6,3,6,2"/>
         </choice_glyph>
        </choice>
-       <tran_glyph conn="10,96,3,-1,9,1,10,-1,9">
+       <tran_glyph conn="10,96,3,-1,28">
         <action box="0,-2,18,2"/>
        </tran_glyph>
       </tran>
@@ -189,8 +189,81 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
      </state>
      <state name="diving">
       <entry>me-&gt;start_dive_time_in_ticks = BSP_get_ticks();</entry>
+      <exit>QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_SILENCE_SIG, ALL_ALARMS);</exit>
+      <tran trig="ASCENT_RATE_ADC">
+       <action>            BSP_ledOff(ADC_LED);
+
+            me-&gt;ascent_rate_in_mm_per_sec =
+                ASCENT_RATE_MM_PER_MIN((uint16_t)Q_PAR(me));
+
+                            /* integrate the depth based on the ascent rate */
+            me-&gt;depth_in_mm -=
+                depth_change_in_mm(me-&gt;ascent_rate_in_mm_per_sec);</action>
+       <choice>
+        <guard>me-&gt;depth_in_mm &gt; 0</guard>
+        <action>                uint32_t consumed_gas_in_cl = gas_rate_in_cl(me-&gt;depth_in_mm);
+
+                if (me-&gt;gas_in_cylinder_in_cl &gt; consumed_gas_in_cl) {
+                    me-&gt;gas_in_cylinder_in_cl -= consumed_gas_in_cl;
+                }
+                else {
+                    me-&gt;gas_in_cylinder_in_cl = 0;
+                }
+
+                me-&gt;dive_time_in_ticks = BSP_get_ticks()
+                                         - me-&gt;start_dive_time_in_ticks;
+
+                me-&gt;tts_in_ticks = me-&gt;depth_in_mm * ((uint32_t)60 * BSP_TICKS_PER_SEC)
+                                   / ASCENT_RATE_LIMIT;
+
+                Capstone_display_depth(me);
+                Capstone_display_assent(me);
+                Capstone_display_pressure(me);
+
+                                           /* check the OUT_OF_AIR_ALARM... */
+                if (me-&gt;gas_in_cylinder_in_cl &lt;
+                    gas_to_surface_in_cl(me-&gt;depth_in_mm) + GAS_SAFETY_MARGIN)
+                {
+                    QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_REQUEST_SIG, OUT_OF_AIR_ALARM);
+                }
+                else {
+                    QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_SILENCE_SIG, OUT_OF_AIR_ALARM);
+                }
+
+                                          /* check the ASCENT_RATE_ALARM... */
+                if (me-&gt;ascent_rate_in_mm_per_sec &gt; ASCENT_RATE_LIMIT) {
+                    QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_REQUEST_SIG, ASCENT_RATE_ALARM);
+                }
+                else {
+                    QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_SILENCE_SIG, ASCENT_RATE_ALARM);
+                }
+
+                                                /* check the DEPTH_ALARM... */
+                if (me-&gt;depth_in_mm &gt; MAXIMUM_DEPTH_IN_MM) {
+                    QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_REQUEST_SIG, DEPTH_ALARM);
+                }
+                else {
+                    QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_SILENCE_SIG, DEPTH_ALARM);
+                }
+
+                return Q_HANDLED();</action>
+        <choice_glyph conn="38,112,4,-1,-3,20">
+         <action box="3,-2,17,2"/>
+        </choice_glyph>
+       </choice>
+       <choice target="../../../3">
+        <guard>else</guard>
+        <choice_glyph conn="38,112,4,1,9,34,-30,-7">
+         <action box="1,5,6,2"/>
+        </choice_glyph>
+       </choice>
+       <tran_glyph conn="9,112,3,-1,29">
+        <action box="0,-2,17,2"/>
+       </tran_glyph>
+      </tran>
       <state_glyph node="9,104,59,22">
        <entry box="1,2,5,2"/>
+       <exit box="1,4,5,2"/>
       </state_glyph>
      </state>
      <state_glyph node="6,27,103,101"/>
@@ -198,24 +271,45 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
     <state_diagram size="117,143"/>
    </statechart>
   </class>
+  <class name="AlarmMgr" superclass="qpn::QActive">
+   <statechart>
+    <initial target="../1">
+     <initial_glyph conn="13,5,5,0,24,6">
+      <action box="0,-2,6,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="silent">
+     <state_glyph node="16,11,41,26"/>
+    </state>
+    <state_diagram size="80,50"/>
+   </statechart>
+  </class>
   <attribute name="AO_capstone" type="QActive *const" visibility="0x00" properties="0x00"/>
+  <attribute name="AO_AlarmMgr" type="QActive *const" visibility="0x00" properties="0x00"/>
   <operation name="Capstone_ctor" type="void" visibility="0x00" properties="0x00">
    <documentation>constructor</documentation>
    <code>QActive_ctor(&amp;AO_Capstone.super, Q_STATE_CAST(&amp;Capstone_initial));</code>
+  </operation>
+  <operation name="AlarmMgr_ctor" type="void" visibility="0x00" properties="0x00">
+   <documentation>constructor</documentation>
+   <code>QActive_ctor(&amp;AO_AlarmMgr.super, Q_STATE_CAST(&amp;AlarmMgr_initial));</code>
   </operation>
  </package>
  <directory name=".">
   <file name="main.c">
    <text>#include &quot;qpn_port.h&quot;   /* QP-nano port */
 #include &quot;bsp.h&quot;        /* Board Support Package (BSP) */
-#include &quot;capstone.h&quot;   /* application interface */
+#include &quot;capstone.h&quot;
+#include &quot;alarm.h&quot;
 /*..........................................................................*/
 static QEvt l_capstoneQueue[5];
+static QEvt l_alarmQueue[5];
 
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
-    { (QActive *)0,           (QEvt *)0,      0                     },
-    { (QActive *)&amp;AO_Capstone, l_capstoneQueue, Q_DIM(l_capstoneQueue)     }
+    { (QActive *)0,           (QEvt *)0,      0                            },
+    { (QActive *)&amp;AO_Capstone, l_capstoneQueue, Q_DIM(l_capstoneQueue)     },
+    { (QActive *)&amp;AO_AlarmMgr, l_alarmQueue, Q_DIM(l_alarmQueue)           }
 };
 
 /* make sure that the QF_active[] array matches QF_MAX_ACTIVE in qpn_port.h */
@@ -224,7 +318,8 @@ Q_ASSERT_COMPILE(QF_MAX_ACTIVE == Q_DIM(QF_active) - 1);
 /*..........................................................................*/
 int main(void)
 {
-    Capstone_ctor();    /* instantiate the Blink AO */
+    Capstone_ctor();
+    AlarmMgr_ctor();
     BSP_init();      /* initialize the board */
 
     return QF_run(); /* transfer control to QF-nano */
@@ -234,6 +329,7 @@ int main(void)
    <text>#include &quot;qpn_port.h&quot;
 #include &quot;bsp.h&quot;
 #include &quot;capstone.h&quot;
+#include &quot;alarm.h&quot;
 
 #ifndef NDEBUG
 Q_DEFINE_THIS_FILE
@@ -243,7 +339,7 @@ Q_DEFINE_THIS_FILE
 $declare(AOs::Capstone)
 
 /* Global objects ----------------------------------------------------------*/
-Capstone AO_Capstone;     /* the single instance of the Blink active object */
+Capstone AO_Capstone;
 
 /* Capstone class definition -----------------------------------------------*/
 $define(AOs::Capstone_ctor)
@@ -254,6 +350,7 @@ $define(AOs::Capstone)</text>
 #define __CAPSTONE_H__
 
 #include &quot;helpers.h&quot;
+#include &quot;scuba.h&quot;
 
 #define MID_A2D_SCALE           511
 
@@ -289,6 +386,8 @@ $define(AOs::Capstone)</text>
 #define LCD_PRESSURE_LIMIT      40
 #define LCD_ASCENT_RATE_LIMIT   40
 
+#define LCD_ASCENT_RATE_LIMIT   40
+
 #define GAS_SAFETY_MARGIN  \
     (((uint32_t)CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE) / 5)
 
@@ -306,7 +405,17 @@ enum CapstoneSignals {
     BTN2_UP_SIG,
     HEARTBEAT_SIG,
     DT_TTS_SIG,
-    ASCENT_RATE_ADC_SIG
+    ASCENT_RATE_ADC_SIG,
+    ALARM_REQUEST_SIG,
+    ALARM_SILENCE_SIG
+};
+
+enum AlarmTypes {          /* arranged in ascending order of alarm priority */
+    ALL_ALARMS,
+    DEPTH_ALARM,
+    ASCENT_RATE_ALARM,
+    OUT_OF_AIR_ALARM,
+    MAX_ALARM                                           /* keep always last */
 };
 
 // active objects ................................................*/
@@ -315,6 +424,36 @@ $declare(AOs::Capstone_ctor)
 extern struct CapstoneTag AO_Capstone;
 
 #endif /* __CAPSTONE_H__ */</text>
+  </file>
+  <file name="alarm.h">
+   <text>#ifndef __ALARM_H__
+#define __ALARM_H__
+
+// active objects ................................................*/
+$declare(AOs::AlarmMgr_ctor)
+
+extern struct AlarmMgrTag AO_AlarmMgr;
+
+#endif</text>
+  </file>
+  <file name="alarm.c">
+   <text>#include &quot;qpn_port.h&quot;
+#include &quot;bsp.h&quot;
+#include &quot;alarm.h&quot;
+
+#ifndef NDEBUG
+Q_DEFINE_THIS_FILE
+#endif
+
+/* Pelican class declaration -----------------------------------------------*/
+$declare(AOs::AlarmMgr)
+
+/* Global objects ----------------------------------------------------------*/
+AlarmMgr AO_AlarmMgr;
+
+/* Capstone class definition -----------------------------------------------*/
+$define(AOs::AlarmMgr_ctor)
+$define(AOs::AlarmMgr)</text>
   </file>
  </directory>
 </model>

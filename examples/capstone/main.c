@@ -17,14 +17,17 @@
 /* @(/2/0) .................................................................*/
 #include "qpn_port.h"   /* QP-nano port */
 #include "bsp.h"        /* Board Support Package (BSP) */
-#include "capstone.h"   /* application interface */
+#include "capstone.h"
+#include "alarm.h"
 /*..........................................................................*/
 static QEvt l_capstoneQueue[5];
+static QEvt l_alarmQueue[5];
 
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
-    { (QActive *)0,           (QEvt *)0,      0                     },
-    { (QActive *)&AO_Capstone, l_capstoneQueue, Q_DIM(l_capstoneQueue)     }
+    { (QActive *)0,           (QEvt *)0,      0                            },
+    { (QActive *)&AO_Capstone, l_capstoneQueue, Q_DIM(l_capstoneQueue)     },
+    { (QActive *)&AO_AlarmMgr, l_alarmQueue, Q_DIM(l_alarmQueue)           }
 };
 
 /* make sure that the QF_active[] array matches QF_MAX_ACTIVE in qpn_port.h */
@@ -33,7 +36,8 @@ Q_ASSERT_COMPILE(QF_MAX_ACTIVE == Q_DIM(QF_active) - 1);
 /*..........................................................................*/
 int main(void)
 {
-    Capstone_ctor();    /* instantiate the Blink AO */
+    Capstone_ctor();
+    AlarmMgr_ctor();
     BSP_init();      /* initialize the board */
 
     return QF_run(); /* transfer control to QF-nano */

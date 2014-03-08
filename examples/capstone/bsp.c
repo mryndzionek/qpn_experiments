@@ -3,6 +3,7 @@
 #include <avr/io.h>                                              /* AVR I/O */
 #ifndef NDEBUG
 #include <stdlib.h>
+#include <stdio.h>
 #endif
 #include "lcd.h"
 #include "capstone.h"
@@ -98,7 +99,7 @@ ISR(TIMER1_COMPA_vect) {
         }
 
     if(!(ADCSRA & _BV(ADSC)));
-        QActive_postISR((QActive *)&AO_Capstone, ASCENT_RATE_ADC_SIG, ADC);
+    QActive_postISR((QActive *)&AO_Capstone, ASCENT_RATE_ADC_SIG, ADC);
 
     QF_tick();
     ++l_nticks;                            /* account for another time tick */
@@ -244,3 +245,11 @@ void BSP_progressBar(uint8_t x, uint8_t y, uint8_t progress,
 uint32_t BSP_get_ticks(void) {
     return l_nticks;
 }
+/*..........................................................................*/
+void BSP_ADCstart(void) {
+    //select ADC channel with safety mask
+    ADMUX = (ADMUX & 0xF0) | (ADC_CHANNEL & 0x0F);
+    //single conversion mode
+    ADCSRA |= _BV(ADSC);
+}
+
