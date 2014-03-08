@@ -279,6 +279,12 @@ static QState Capstone_adding_gas(Capstone * const me) {
 static QState Capstone_diving(Capstone * const me) {
     QState status_;
     switch (Q_SIG(me)) {
+        /* @(/1/0/13/1/4) */
+        case Q_ENTRY_SIG: {
+            me->start_dive_time_in_ticks = BSP_get_ticks();
+            status_ = Q_HANDLED();
+            break;
+        }
         default: {
             status_ = Q_SUPER(&Capstone_always);
             break;

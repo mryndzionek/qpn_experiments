@@ -188,7 +188,10 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
       </state_glyph>
      </state>
      <state name="diving">
-      <state_glyph node="9,104,59,22"/>
+      <entry>me-&gt;start_dive_time_in_ticks = BSP_get_ticks();</entry>
+      <state_glyph node="9,104,59,22">
+       <entry box="1,2,5,2"/>
+      </state_glyph>
      </state>
      <state_glyph node="6,27,103,101"/>
     </state>

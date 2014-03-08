@@ -35,6 +35,8 @@ const uint8_t PROGMEM bar5[] = {
 Q_DEFINE_THIS_FILE
 #endif
 
+static uint32_t l_nticks;                    /* number of system time ticks */
+
 static volatile uint8_t btn1_poll = 0;
 static volatile uint8_t btn2_poll = 0;
 static volatile uint8_t dt_tts_counter = 0;
@@ -99,6 +101,7 @@ ISR(TIMER1_COMPA_vect) {
         QActive_postISR((QActive *)&AO_Capstone, ASCENT_RATE_ADC_SIG, ADC);
 
     QF_tick();
+    ++l_nticks;                            /* account for another time tick */
 }
 /*..........................................................................*/
 void BSP_init(void) {
@@ -236,4 +239,8 @@ void BSP_progressBar(uint8_t x, uint8_t y, uint8_t progress,
     lcd_set_position((y-1)*LCD_COLS+x-1);
     lcd_putstr(buff);
 
+}
+/*..........................................................................*/
+uint32_t BSP_get_ticks(void) {
+    return l_nticks;
 }
