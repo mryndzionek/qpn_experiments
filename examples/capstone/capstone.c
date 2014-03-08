@@ -257,7 +257,7 @@ static QState Capstone_adding_gas(Capstone * const me) {
         /* @(/1/0/13/1/3/3/1) */
         case Q_TIMEOUT_SIG: {
             if (me->gas_in_cylinder_in_cl + GAS_INCREMENT_IN_CL
-                            <= ((uint32_t)CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE))
+                            <= (CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE))
             {
                 me->gas_in_cylinder_in_cl += GAS_INCREMENT_IN_CL;/* add gas */
                 Capstone_display_pressure(me);
@@ -316,7 +316,7 @@ static QState Capstone_diving(Capstone * const me) {
                                 me->dive_time_in_ticks = BSP_get_ticks()
                                                          - me->start_dive_time_in_ticks;
 
-                                me->tts_in_ticks = me->depth_in_mm * ((uint32_t)60 * BSP_TICKS_PER_SEC)
+                                me->tts_in_ticks = me->depth_in_mm * (60 * BSP_TICKS_PER_SEC)
                                                    / ASCENT_RATE_LIMIT;
 
                                 Capstone_display_depth(me);

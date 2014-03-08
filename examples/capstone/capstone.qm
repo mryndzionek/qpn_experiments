@@ -164,7 +164,7 @@ Capstone_display_pressure(me);</exit>
        </tran>
        <tran trig="Q_TIMEOUT">
         <action>if (me-&gt;gas_in_cylinder_in_cl + GAS_INCREMENT_IN_CL
-                &lt;= ((uint32_t)CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE))
+                &lt;= (CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE))
 {
     me-&gt;gas_in_cylinder_in_cl += GAS_INCREMENT_IN_CL;/* add gas */
     Capstone_display_pressure(me);
@@ -213,7 +213,7 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
                 me-&gt;dive_time_in_ticks = BSP_get_ticks()
                                          - me-&gt;start_dive_time_in_ticks;
 
-                me-&gt;tts_in_ticks = me-&gt;depth_in_mm * ((uint32_t)60 * BSP_TICKS_PER_SEC)
+                me-&gt;tts_in_ticks = me-&gt;depth_in_mm * (60 * BSP_TICKS_PER_SEC)
                                    / ASCENT_RATE_LIMIT;
 
                 Capstone_display_depth(me);
@@ -268,7 +268,7 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
      </state>
      <state_glyph node="6,27,103,101"/>
     </state>
-    <state_diagram size="117,143"/>
+    <state_diagram size="117,129"/>
    </statechart>
   </class>
   <class name="AlarmMgr" superclass="qpn::QActive">
@@ -279,6 +279,16 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
      </initial_glyph>
     </initial>
     <state name="silent">
+     <tran trig="ALARM_REQUEST">
+      <tran_glyph conn="16,17,3,-1,26">
+       <action box="0,-2,15,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="ALARM_SILENCE">
+      <tran_glyph conn="16,28,3,-1,26">
+       <action box="0,-2,13,2"/>
+      </tran_glyph>
+     </tran>
      <state_glyph node="16,11,41,26"/>
     </state>
     <state_diagram size="80,50"/>
@@ -302,14 +312,15 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
 #include &quot;capstone.h&quot;
 #include &quot;alarm.h&quot;
 /*..........................................................................*/
-static QEvt l_capstoneQueue[5];
-static QEvt l_alarmQueue[5];
+static QEvt l_capstoneQueue[10];
+static QEvt l_alarmQueue[10];
 
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
     { (QActive *)0,           (QEvt *)0,      0                            },
     { (QActive *)&amp;AO_Capstone, l_capstoneQueue, Q_DIM(l_capstoneQueue)     },
     { (QActive *)&amp;AO_AlarmMgr, l_alarmQueue, Q_DIM(l_alarmQueue)           }
+
 };
 
 /* make sure that the QF_active[] array matches QF_MAX_ACTIVE in qpn_port.h */
@@ -378,9 +389,9 @@ $define(AOs::Capstone)</text>
 
 #define PROGRESS_BAR_LEN        8
 
-#define MAXIMUM_DEPTH_IN_MM     (40*1000)
-#define CYLINDER_VOLUME_IN_CL   (10*100)
-#define FULL_SCALE_ASCENT_RATE  (40*1000)
+#define MAXIMUM_DEPTH_IN_MM     (40L*1000L)
+#define CYLINDER_VOLUME_IN_CL   (10L*100L)
+#define FULL_SCALE_ASCENT_RATE  (40L*1000L)
 #define FULL_SCALE_CYLINDER_PRESSURE   200
 
 #define LCD_PRESSURE_LIMIT      40
@@ -389,7 +400,7 @@ $define(AOs::Capstone)</text>
 #define LCD_ASCENT_RATE_LIMIT   40
 
 #define GAS_SAFETY_MARGIN  \
-    (((uint32_t)CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE) / 5)
+    ((CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE) / 5)
 
 #define GAS_INCREMENT_IN_CL      500
 
@@ -439,6 +450,7 @@ extern struct AlarmMgrTag AO_AlarmMgr;
   <file name="alarm.c">
    <text>#include &quot;qpn_port.h&quot;
 #include &quot;bsp.h&quot;
+#include &quot;capstone.h&quot;
 #include &quot;alarm.h&quot;
 
 #ifndef NDEBUG

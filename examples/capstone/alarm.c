@@ -17,6 +17,7 @@
 /* @(/2/4) .................................................................*/
 #include "qpn_port.h"
 #include "bsp.h"
+#include "capstone.h"
 #include "alarm.h"
 
 #ifndef NDEBUG
@@ -53,6 +54,16 @@ static QState AlarmMgr_initial(AlarmMgr * const me) {
 static QState AlarmMgr_silent(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
+        /* @(/1/1/0/1/0) */
+        case ALARM_REQUEST_SIG: {
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* @(/1/1/0/1/1) */
+        case ALARM_SILENCE_SIG: {
+            status_ = Q_HANDLED();
+            break;
+        }
         default: {
             status_ = Q_SUPER(&QHsm_top);
             break;

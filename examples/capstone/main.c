@@ -20,14 +20,15 @@
 #include "capstone.h"
 #include "alarm.h"
 /*..........................................................................*/
-static QEvt l_capstoneQueue[5];
-static QEvt l_alarmQueue[5];
+static QEvt l_capstoneQueue[10];
+static QEvt l_alarmQueue[10];
 
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
     { (QActive *)0,           (QEvt *)0,      0                            },
     { (QActive *)&AO_Capstone, l_capstoneQueue, Q_DIM(l_capstoneQueue)     },
     { (QActive *)&AO_AlarmMgr, l_alarmQueue, Q_DIM(l_alarmQueue)           }
+
 };
 
 /* make sure that the QF_active[] array matches QF_MAX_ACTIVE in qpn_port.h */

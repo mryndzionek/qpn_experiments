@@ -20,7 +20,7 @@
           /** Respiratory half second volume = 10 centiLitres / half_second */
 #define RHSV    (RMV / 2 / 60)
 
-#define HALFSECS_TO_ASCEND_1000MM  (2 * 60 * 1000 / ASCENT_RATE_LIMIT)
+#define HALFSECS_TO_ASCEND_1000MM  ((uint32_t)2 * 60 * 1000 / ASCENT_RATE_LIMIT)
 
 /**
  FUNCTION: gas_rate_in_cl
