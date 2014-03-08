@@ -5,14 +5,13 @@
 
                                               /* Sys timer tick per seconds */
 #define BSP_TICKS_PER_SEC    50
-enum BSP_LedSignal {
-    UP,DOWN
-};
 
 void BSP_init(void);
-void BSP_signalLeds(enum BSP_LedSignal sig);
-void BSP_progressBar(uint8_t progress, uint8_t maxprogress, uint8_t length);
-uint8_t BSP_readADC(uint8_t channel);
+void BSP_ledOn(uint8_t led_num);
+void BSP_ledOff(uint8_t led_num);
+void BSP_lcdStr(uint8_t x, uint8_t y, char const *str);
+void BSP_progressBar(uint8_t x, uint8_t y, uint8_t progress,
+                     uint8_t maxprogress, uint8_t length);
 
 #define BSP_showState(state_) ((void)0)
 

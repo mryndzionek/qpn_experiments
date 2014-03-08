@@ -5,6 +5,7 @@ add_avr_executable(
     main.c
     capstone.c
     bsp.c
+	helpers.c
     ${CMAKE_SOURCE_DIR}/lcd/lcd.c
     ${CMAKE_SOURCE_DIR}/qpn/source/qepn.c
     ${CMAKE_SOURCE_DIR}/qpn/source/qfn.c

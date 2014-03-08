@@ -3,41 +3,196 @@
  <framework name="qpn"/>
  <package name="AOs" stereotype="0x02">
   <class name="Capstone" superclass="qpn::QActive">
+   <attribute name="heartbeat_led_sel" type="uint8_t" visibility="0x02" properties="0x00"/>
+   <attribute name="depth_in_mm" type="int32_t" visibility="0x02" properties="0x00"/>
+   <attribute name="depth_units[2]" type="char" visibility="0x02" properties="0x00"/>
+   <attribute name="dt_tts_sel" type="uint8_t" visibility="0x02" properties="0x00"/>
+   <attribute name="ascent_rate_in_mm_per_sec" type="int32_t" visibility="0x02" properties="0x00"/>
+   <attribute name="start_dive_time_in_ticks" type="uint32_t" visibility="0x02" properties="0x00"/>
+   <attribute name="dive_time_in_ticks" type="uint32_t" visibility="0x02" properties="0x00"/>
+   <attribute name="tts_in_ticks" type="uint32_t" visibility="0x02" properties="0x00"/>
+   <attribute name="gas_in_cylinder_in_cl" type="uint32_t" visibility="0x02" properties="0x00"/>
+   <attribute name="consumed_gas_in_cl" type="uint32_t" visibility="0x02" properties="0x00"/>
+   <operation name="display_depth" type="void" visibility="0x02" properties="0x00">
+    <code>int32_t displayed_depth;
+
+if (me-&gt;depth_units[0] == 'm') {                        /* show meters? */
+    displayed_depth = (me-&gt;depth_in_mm + 1000/2) / 1000;
+}
+else {                                                     /* show feet */
+    displayed_depth = (me-&gt;depth_in_mm * 328 + 100000/2) / 100000;
+}
+
+if (displayed_depth &gt; 999) {             /* clamp the depth to 3 digits */
+    displayed_depth = 999;
+}
+
+BSP_lcdStr(LCD_DEPTH_X + 4,  LCD_DEPTH_Y, bin2dec3(displayed_depth));
+BSP_lcdStr(LCD_DEPTH_UNITS_X, LCD_DEPTH_Y, me-&gt;depth_units);</code>
+   </operation>
+   <operation name="display_pressure" type="void" visibility="0x02" properties="0x00">
+    <code>uint32_t cylinder_pressure_in_bar =
+         1 + (me-&gt;gas_in_cylinder_in_cl / CYLINDER_VOLUME_IN_CL);
+BSP_progressBar(LCD_CP_X, LCD_CP_Y,
+        (cylinder_pressure_in_bar * LCD_PRESSURE_LIMIT
+             / FULL_SCALE_CYLINDER_PRESSURE),
+        LCD_PRESSURE_LIMIT, PROGRESS_BAR_LEN);</code>
+   </operation>
+   <operation name="display_assent" type="void" visibility="0x02" properties="0x00">
+    <code>if (me-&gt;ascent_rate_in_mm_per_sec &gt; 0) {                  /* ascending? */
+        BSP_progressBar(LCD_AR_X, LCD_AR_Y,
+            (me-&gt;ascent_rate_in_mm_per_sec * LCD_ASCENT_RATE_LIMIT)
+                / FULL_SCALE_ASCENT_RATE,
+            LCD_ASCENT_RATE_LIMIT, PROGRESS_BAR_LEN);
+}
+else {                          /* descending--show empty ascending bar */
+        BSP_progressBar(LCD_AR_X, LCD_AR_Y, 0, LCD_ASCENT_RATE_LIMIT,
+            PROGRESS_BAR_LEN);
+}</code>
+   </operation>
    <statechart>
-    <initial target="../2">
-     <initial_glyph conn="42,6,5,0,12,5">
-      <action box="0,-2,6,2"/>
+    <initial target="../1/3">
+     <action>me-&gt;depth_units[0]        = 'm';                              /* meters */
+me-&gt;depth_units[1]        = '\0';                     /* zero terminate */
+me-&gt;gas_in_cylinder_in_cl = 0;
+me-&gt;heartbeat_led_sel = 0;
+me-&gt;dt_tts_sel            = 0;
+
+BSP_lcdStr(LCD_DEPTH_X, LCD_DEPTH_Y, &quot;Dpt&quot;);</action>
+     <initial_glyph conn="32,8,5,0,19,47">
+      <action box="20,2,38,14"/>
      </initial_glyph>
     </initial>
-    <state name="btn1_down">
-     <entry>uint16_t adcv =  BSP_readADC(0);
-BSP_progressBar(adcv, 255, 16);
-BSP_signalLeds(DOWN);
-QActive_arm((QActive *)me, BSP_TICKS_PER_SEC / 10);</entry>
-     <tran trig="Q_TIMEOUT" target="../../2">
-      <tran_glyph conn="9,22,3,1,50">
-       <action box="0,-3,11,2"/>
+    <state name="always">
+     <tran trig="HEARTBEAT">
+      <action>//select ADC channel with safety mask
+ADMUX = (ADMUX &amp; 0xF0) | (ADC_CHANNEL &amp; 0x0F);
+//single conversion mode
+ADCSRA |= _BV(ADSC);
+BSP_ledOn(ADC_LED);
+if (me-&gt;heartbeat_led_sel) {
+    BSP_ledOn(HEARTBEAT_LED);
+}
+else {
+    BSP_ledOff(HEARTBEAT_LED);
+}
+me-&gt;heartbeat_led_sel = !me-&gt;heartbeat_led_sel;
+QActive_arm((QActive *)me, HEARTBEAT_TOUT);</action>
+      <tran_glyph conn="6,35,3,-1,18">
+       <action box="0,-2,34,17"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="9,11,16,15">
-      <entry box="1,2,5,2"/>
-     </state_glyph>
-    </state>
-    <state name="btn1_up">
-     <entry>uint16_t adcv =  BSP_readADC(0);
-BSP_progressBar(adcv, 255, 16);
-BSP_signalLeds(UP);
-QActive_arm((QActive *)me, BSP_TICKS_PER_SEC / 10);</entry>
-     <tran trig="Q_TIMEOUT" target="../../1">
-      <tran_glyph conn="59,16,1,3,-50">
-       <action box="-8,-2,9,2"/>
+     <tran trig="DT_TTS">
+      <action>if (me-&gt;dt_tts_sel) {
+    BSP_lcdStr(LCD_TTS_X, LCD_TTS_Y, &quot;TTS&quot;);
+    BSP_lcdStr(LCD_TTS_X + 3, LCD_TTS_Y,
+        ticks2min_sec(me-&gt;tts_in_ticks));
+}
+else {
+    BSP_lcdStr(LCD_TTS_X, LCD_TTS_Y, &quot;Div&quot;);
+    BSP_lcdStr(LCD_TTS_X + 3, LCD_TTS_Y,
+        ticks2min_sec(me-&gt;dive_time_in_ticks));
+}
+me-&gt;dt_tts_sel = !me-&gt;dt_tts_sel;</action>
+      <tran_glyph conn="109,43,1,-1,-47">
+       <action box="-34,-2,55,20"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="40,11,19,14">
-      <entry box="1,2,5,2"/>
-     </state_glyph>
+     <tran trig="BTN2_DOWN">
+      <action>if (me-&gt;depth_units[0] == 'm') {
+    me-&gt;depth_units[0] = 'f';
+}
+else {
+    me-&gt;depth_units[0] = 'm';
+}
+Capstone_display_depth(me);</action>
+      <tran_glyph conn="109,71,1,-1,-37">
+       <action box="-34,0,27,14"/>
+      </tran_glyph>
+     </tran>
+     <state name="surfaced">
+      <entry>BSP_ledOn(SURFACE_LED);
+me-&gt;depth_in_mm = 0;
+Capstone_display_depth(me);
+me-&gt;dive_time_in_ticks = 0;
+me-&gt;tts_in_ticks = 0;
+me-&gt;ascent_rate_in_mm_per_sec = 0;
+Capstone_display_assent(me);</entry>
+      <exit>BSP_ledOff(SURFACE_LED);</exit>
+      <tran trig="BTN1_UP">
+       <action>Capstone_display_pressure(me);</action>
+       <tran_glyph conn="10,64,3,-1,30">
+        <action box="0,-2,25,4"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="BTN1_DOWN" target="../3">
+       <tran_glyph conn="10,71,3,0,21,3">
+        <action box="0,-2,13,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="ASCENT_RATE_ADC">
+       <action>BSP_ledOff(ADC_LED);
+
+me-&gt;ascent_rate_in_mm_per_sec =
+    ASCENT_RATE_MM_PER_MIN((uint16_t)Q_PAR(me));
+</action>
+       <choice>
+        <guard>me-&gt;ascent_rate_in_mm_per_sec &gt;= 0</guard>
+        <action>me-&gt;ascent_rate_in_mm_per_sec = 0;</action>
+        <choice_glyph conn="38,96,5,-1,15">
+         <action box="1,0,32,4"/>
+        </choice_glyph>
+       </choice>
+       <choice target="../../../4">
+        <guard>else</guard>
+        <choice_glyph conn="38,96,4,0,8">
+         <action box="-6,3,6,2"/>
+        </choice_glyph>
+       </choice>
+       <tran_glyph conn="10,96,3,-1,9,1,10,-1,9">
+        <action box="0,-2,18,2"/>
+       </tran_glyph>
+      </tran>
+      <state name="adding_gas">
+       <entry>QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</entry>
+       <exit>QActive_disarm((QActive *)me);
+Capstone_display_pressure(me);</exit>
+       <tran trig="BTN1_UP" target="../..">
+        <tran_glyph conn="14,88,3,1,51">
+         <action box="0,-2,9,2"/>
+        </tran_glyph>
+       </tran>
+       <tran trig="Q_TIMEOUT">
+        <action>if (me-&gt;gas_in_cylinder_in_cl + GAS_INCREMENT_IN_CL
+                &lt;= ((uint32_t)CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE))
+{
+    me-&gt;gas_in_cylinder_in_cl += GAS_INCREMENT_IN_CL;/* add gas */
+    Capstone_display_pressure(me);
+}
+else {                                  /* the cylinder is full */
+    BSP_lcdStr(LCD_CP_X + 2, LCD_CP_Y, &quot;FULL&quot;);
+}
+QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
+        <tran_glyph conn="14,82,3,-1,21">
+         <action box="0,-2,12,2"/>
+        </tran_glyph>
+       </tran>
+       <state_glyph node="14,74,29,18">
+        <entry box="1,2,6,2"/>
+        <exit box="1,4,5,2"/>
+       </state_glyph>
+      </state>
+      <state_glyph node="10,55,55,47">
+       <entry box="1,2,5,2"/>
+       <exit box="1,4,5,2"/>
+      </state_glyph>
+     </state>
+     <state name="diving">
+      <state_glyph node="9,104,59,22"/>
+     </state>
+     <state_glyph node="6,27,103,101"/>
     </state>
-    <state_diagram size="80,50"/>
+    <state_diagram size="117,143"/>
    </statechart>
   </class>
   <attribute name="AO_capstone" type="QActive *const" visibility="0x00" properties="0x00"/>
@@ -95,11 +250,60 @@ $define(AOs::Capstone)</text>
    <text>#ifndef __CAPSTONE_H__
 #define __CAPSTONE_H__
 
+#include &quot;helpers.h&quot;
+
+#define MID_A2D_SCALE           511
+
+#define LCD_AR_X                1
+#define LCD_AR_Y                1
+
+#define HEARTBEAT_TOUT           BSP_TICKS_PER_SEC/2
+#define DT_TTS_TOUT              BSP_TICKS_PER_SEC*2
+
+#define ADC_CHANNEL    0
+#define ADC_LED        0     //RED
+#define HEARTBEAT_LED  4     //GREEN
+#define SURFACE_LED    1     //YELLOW
+
+#define LCD_DEPTH_Y             1
+#define LCD_DEPTH_X             9
+
+#define LCD_TTS_Y               2
+#define LCD_TTS_X               9
+
+#define LCD_CP_Y                2
+#define LCD_CP_X                1
+
+#define LCD_DEPTH_UNITS_X       16
+
+#define PROGRESS_BAR_LEN        8
+
+#define MAXIMUM_DEPTH_IN_MM     (40*1000)
+#define CYLINDER_VOLUME_IN_CL   (10*100)
+#define FULL_SCALE_ASCENT_RATE  (40*1000)
+#define FULL_SCALE_CYLINDER_PRESSURE   200
+
+#define LCD_PRESSURE_LIMIT      40
+#define LCD_ASCENT_RATE_LIMIT   40
+
+#define GAS_SAFETY_MARGIN  \
+    (((uint32_t)CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE) / 5)
+
+#define GAS_INCREMENT_IN_CL      500
+
+/** conversion from raw A2D reading to ascent/descent rate in mm/min */
+#define ASCENT_RATE_MM_PER_MIN(raw_) \
+    (int32_t)((((int32_t)(raw_) - MID_A2D_SCALE) * FULL_SCALE_ASCENT_RATE) \
+              / MID_A2D_SCALE)
+
 enum CapstoneSignals {
     BTN1_DOWN_SIG = Q_USER_SIG,
     BTN1_UP_SIG,
     BTN2_DOWN_SIG,
-    BTN2_UP_SIG
+    BTN2_UP_SIG,
+    HEARTBEAT_SIG,
+    DT_TTS_SIG,
+    ASCENT_RATE_ADC_SIG
 };
 
 // active objects ................................................*/

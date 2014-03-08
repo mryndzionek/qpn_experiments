@@ -18,11 +18,60 @@
 #ifndef __CAPSTONE_H__
 #define __CAPSTONE_H__
 
+#include "helpers.h"
+
+#define MID_A2D_SCALE           511
+
+#define LCD_AR_X                1
+#define LCD_AR_Y                1
+
+#define HEARTBEAT_TOUT           BSP_TICKS_PER_SEC/2
+#define DT_TTS_TOUT              BSP_TICKS_PER_SEC*2
+
+#define ADC_CHANNEL    0
+#define ADC_LED        0     //RED
+#define HEARTBEAT_LED  4     //GREEN
+#define SURFACE_LED    1     //YELLOW
+
+#define LCD_DEPTH_Y             1
+#define LCD_DEPTH_X             9
+
+#define LCD_TTS_Y               2
+#define LCD_TTS_X               9
+
+#define LCD_CP_Y                2
+#define LCD_CP_X                1
+
+#define LCD_DEPTH_UNITS_X       16
+
+#define PROGRESS_BAR_LEN        8
+
+#define MAXIMUM_DEPTH_IN_MM     (40*1000)
+#define CYLINDER_VOLUME_IN_CL   (10*100)
+#define FULL_SCALE_ASCENT_RATE  (40*1000)
+#define FULL_SCALE_CYLINDER_PRESSURE   200
+
+#define LCD_PRESSURE_LIMIT      40
+#define LCD_ASCENT_RATE_LIMIT   40
+
+#define GAS_SAFETY_MARGIN  \
+    (((uint32_t)CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE) / 5)
+
+#define GAS_INCREMENT_IN_CL      500
+
+/** conversion from raw A2D reading to ascent/descent rate in mm/min */
+#define ASCENT_RATE_MM_PER_MIN(raw_) \
+    (int32_t)((((int32_t)(raw_) - MID_A2D_SCALE) * FULL_SCALE_ASCENT_RATE) \
+              / MID_A2D_SCALE)
+
 enum CapstoneSignals {
     BTN1_DOWN_SIG = Q_USER_SIG,
     BTN1_UP_SIG,
     BTN2_DOWN_SIG,
-    BTN2_UP_SIG
+    BTN2_UP_SIG,
+    HEARTBEAT_SIG,
+    DT_TTS_SIG,
+    ASCENT_RATE_ADC_SIG
 };
 
 // active objects ................................................*/

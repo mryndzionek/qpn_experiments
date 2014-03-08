@@ -4,15 +4,11 @@
 #ifndef NDEBUG
 #include <stdlib.h>
 #endif
-#include <stdio.h>
 #include "lcd.h"
 #include "capstone.h"
 
 #define PROGRESSPIXELS_PER_CHAR 6
 
-const uint8_t PROGMEM bar0[] = {
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
 const uint8_t PROGMEM bar1[] = {
         0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00
 };
@@ -41,6 +37,8 @@ Q_DEFINE_THIS_FILE
 
 static volatile uint8_t btn1_poll = 0;
 static volatile uint8_t btn2_poll = 0;
+static volatile uint8_t dt_tts_counter = 0;
+static volatile uint8_t heartbeat_counter = 0;
 
 /*..........................................................................*/
 ISR(INT0_vect)
@@ -84,6 +82,22 @@ ISR(TIMER1_COMPA_vect) {
                     GICR |= _BV(INT1);
             }
         }
+    dt_tts_counter++;
+    if(dt_tts_counter == DT_TTS_TOUT)
+        {
+            dt_tts_counter = 0;
+            QActive_postISR((QActive *)&AO_Capstone, DT_TTS_SIG, 0);
+        }
+    heartbeat_counter++;
+    if(heartbeat_counter == HEARTBEAT_TOUT)
+        {
+            heartbeat_counter = 0;
+            QActive_postISR((QActive *)&AO_Capstone, HEARTBEAT_SIG, 0);
+        }
+
+    if(!(ADCSRA & _BV(ADSC)));
+        QActive_postISR((QActive *)&AO_Capstone, ASCENT_RATE_ADC_SIG, ADC);
+
     QF_tick();
 }
 /*..........................................................................*/
@@ -98,7 +112,6 @@ void BSP_init(void) {
 
     lcd_init();
 
-    lcd_customchar_P(0, bar0);
     lcd_customchar_P(1, bar1);
     lcd_customchar_P(2, bar2);
     lcd_customchar_P(3, bar3);
@@ -168,26 +181,21 @@ void Q_onAssert(char const Q_ROM * const Q_ROM_VAR file, int line) {
     }
 }
 /*..........................................................................*/
-void BSP_signalLeds(enum BSP_LedSignal sig) {
-    switch(sig)
-    {
-        case UP:
-            LED_OFF(0);
-            LED_ON(4);
-            break;
-
-        case DOWN:
-            LED_OFF(4);
-            LED_ON(0);
-            break;
-
-        default:
-            break;
-    }
-
+void BSP_ledOn(uint8_t led_num) {
+    LED_ON(led_num);
 }
 /*..........................................................................*/
-void BSP_progressBar(uint8_t progress, uint8_t maxprogress, uint8_t length) {
+void BSP_ledOff(uint8_t led_num) {
+    LED_OFF(led_num);
+}
+/*..........................................................................*/
+void BSP_lcdStr(uint8_t x, uint8_t y, char const *str) {
+    lcd_set_position((y-1)*LCD_COLS+x-1);
+    lcd_putstr((char *)str);
+}
+/*..........................................................................*/
+void BSP_progressBar(uint8_t x, uint8_t y, uint8_t progress,
+                     uint8_t maxprogress, uint8_t length) {
     uint8_t i;
     uint16_t pixelprogress;
     uint8_t c;
@@ -224,24 +232,8 @@ void BSP_progressBar(uint8_t progress, uint8_t maxprogress, uint8_t length) {
             // write character to display
             buff[i] = c;
         }
-    buff[16] = 0;
-    lcd_set_line(0);
+    buff[length] = '\0';
+    lcd_set_position((y-1)*LCD_COLS+x-1);
     lcd_putstr(buff);
 
-    lcd_set_line(1);
-    snprintf (buff, sizeof(buff), "%d     ", progress);
-    lcd_putstr(buff);
-
-}
-
-uint8_t BSP_readADC(uint8_t channel)
-{
-    //select ADC channel with safety mask
-    ADMUX = (ADMUX & 0xF0) | (channel & 0x0F);
-    //single conversion mode
-    ADCSRA |= (1<<ADSC);
-    // wait until ADC conversion is complete
-    while( ADCSRA & (1<<ADSC) );
-
-    return ADC >> 2;
 }
