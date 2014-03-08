@@ -154,7 +154,7 @@ me-&gt;depth_in_mm -=
        </tran_glyph>
       </tran>
       <state name="adding_gas">
-       <entry>QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/20);</entry>
+       <entry>QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</entry>
        <exit>QActive_disarm((QActive *)me);
 Capstone_display_pressure(me);</exit>
        <tran trig="BTN1_UP" target="../..">
@@ -172,7 +172,7 @@ Capstone_display_pressure(me);</exit>
 else {                                  /* the cylinder is full */
     BSP_lcdStr(LCD_CP_X + 2, LCD_CP_Y, &quot;FULL&quot;);
 }
-QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/20);</action>
+QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
         <tran_glyph conn="12,57,3,-1,21">
          <action box="0,-2,12,2"/>
         </tran_glyph>
@@ -293,8 +293,9 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/20);</action>
       <choice target="../../3">
        <guard>else</guard>
        <action>me-&gt;active_alarms |= _BV(alarm_type);
-me-&gt;curr_alarm = _BV(getBitPosition(me-&gt;active_alarms));
-BSP_lcdStr(1,1, bin2dec3(me-&gt;curr_alarm));</action>
+me-&gt;curr_alarm = getBitPosition(me-&gt;active_alarms);
+BSP_lcdStr(1,1, bin2dec3(me-&gt;active_alarms));
+BSP_lcdStr(1,2, bin2dec3(me-&gt;curr_alarm));</action>
        <choice_glyph conn="72,17,5,0,9,16">
         <action box="2,6,6,2"/>
        </choice_glyph>
@@ -326,7 +327,9 @@ BSP_lcdStr(1,1, bin2dec3(me-&gt;curr_alarm));</action>
         <action>alarm_type = getBitPosition(me-&gt;active_alarms);</action>
         <choice target="../../../../3">
          <guard>me-&gt;curr_alarm != alarm_type</guard>
-         <action>me-&gt;curr_alarm = alarm_type;</action>
+         <action>me-&gt;curr_alarm = alarm_type;
+BSP_lcdStr(1,1, bin2dec3(me-&gt;active_alarms));
+BSP_lcdStr(1,2, bin2dec3(me-&gt;curr_alarm));</action>
          <choice_glyph conn="56,36,5,3,8,8,2">
           <action box="1,0,6,2"/>
          </choice_glyph>
@@ -596,10 +599,16 @@ extern struct AlarmMgrTag AO_AlarmMgr;
 Q_DEFINE_THIS_FILE
 #endif
 
-static int lookup[] = {7, 0, 5, 1, 6, 4, 3, 2};
-
 int getBitPosition(uint8_t b) {
-  return lookup[((b * 0x1D) &gt;&gt; 4) &amp; 0x7];
+    uint8_t i;
+
+    for(i=7; i&gt;=0;i--)
+    {
+        if(b &amp; _BV(i))
+            return i;
+    }
+    return -1;
+
 }
 
 /* Pelican class declaration -----------------------------------------------*/

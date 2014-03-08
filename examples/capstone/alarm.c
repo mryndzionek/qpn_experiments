@@ -24,10 +24,16 @@
 Q_DEFINE_THIS_FILE
 #endif
 
-static int lookup[] = {7, 0, 5, 1, 6, 4, 3, 2};
-
 int getBitPosition(uint8_t b) {
-  return lookup[((b * 0x1D) >> 4) & 0x7];
+    uint8_t i;
+
+    for(i=7; i>=0;i--)
+    {
+        if(b & _BV(i))
+            return i;
+    }
+    return -1;
+
 }
 
 /* Pelican class declaration -----------------------------------------------*/
@@ -80,8 +86,9 @@ static QState AlarmMgr_on(AlarmMgr * const me) {
             /* @(/1/1/3/1/0/1) */
             else {
                 me->active_alarms |= _BV(alarm_type);
-                me->curr_alarm = _BV(getBitPosition(me->active_alarms));
-                BSP_lcdStr(1,1, bin2dec3(me->curr_alarm));
+                me->curr_alarm = getBitPosition(me->active_alarms);
+                BSP_lcdStr(1,1, bin2dec3(me->active_alarms));
+                BSP_lcdStr(1,2, bin2dec3(me->curr_alarm));
                 status_ = Q_TRAN(&AlarmMgr_playing);
             }
             break;
@@ -107,6 +114,8 @@ static QState AlarmMgr_on(AlarmMgr * const me) {
                     /* @(/1/1/3/1/1/1/1/0) */
                     if (me->curr_alarm != alarm_type) {
                         me->curr_alarm = alarm_type;
+                        BSP_lcdStr(1,1, bin2dec3(me->active_alarms));
+                        BSP_lcdStr(1,2, bin2dec3(me->curr_alarm));
                         status_ = Q_TRAN(&AlarmMgr_playing);
                     }
                     /* @(/1/1/3/1/1/1/1/1) */
