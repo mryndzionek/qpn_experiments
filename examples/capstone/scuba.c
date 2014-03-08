@@ -15,12 +15,12 @@
 #include "scuba.h"
 
                   /** Respiratory minute volume = 1200 centiLitres / minute */
-#define RMV     1200
+#define RMV     1200L
 
           /** Respiratory half second volume = 10 centiLitres / half_second */
 #define RHSV    (RMV / 2 / 60)
 
-#define HALFSECS_TO_ASCEND_1000MM  ((uint32_t)2 * 60 * 1000 / ASCENT_RATE_LIMIT)
+#define HALFSECS_TO_ASCEND_1000MM  (2L * 60L * 1000L / ASCENT_RATE_LIMIT)
 
 /**
  FUNCTION: gas_rate_in_cl
@@ -39,7 +39,7 @@
 **/
 uint32_t gas_rate_in_cl(int32_t depth_in_mm) {
    /* Ambient pressure in centiBar; 10000mm of water = 1 bar = 100 centibar */
-    uint32_t ambient_pressure_in_cb = 100 + (depth_in_mm / 100);
+    uint32_t ambient_pressure_in_cb = 100L + (depth_in_mm / 100);
 
        /* Gas consumed at STP = RHSV * ambient pressure / standard pressure */
     return ((RHSV * ambient_pressure_in_cb) / 100);
@@ -68,7 +68,7 @@ uint32_t gas_to_surface_in_cl(int32_t depth_in_mm) {
     uint32_t gas = 0;
     for (; depth_in_mm > 0; depth_in_mm -= 1000) {
                                             /* Ambient pressure in centiBar */
-        uint32_t ambient_pressure_in_cb = 100 + (depth_in_mm / 100);
+        uint32_t ambient_pressure_in_cb = 100L + (depth_in_mm / 100);
         gas += (RHSV * HALFSECS_TO_ASCEND_1000MM * ambient_pressure_in_cb)
                 / 100;
     }

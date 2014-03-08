@@ -238,7 +238,7 @@ static QState Capstone_adding_gas(Capstone * const me) {
     switch (Q_SIG(me)) {
         /* @(/1/0/13/1/3/3) */
         case Q_ENTRY_SIG: {
-            QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);
+            QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/20);
             status_ = Q_HANDLED();
             break;
         }
@@ -265,7 +265,7 @@ static QState Capstone_adding_gas(Capstone * const me) {
             else {                                  /* the cylinder is full */
                 BSP_lcdStr(LCD_CP_X + 2, LCD_CP_Y, "FULL");
             }
-            QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);
+            QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/20);
             status_ = Q_HANDLED();
             break;
         }
@@ -316,7 +316,7 @@ static QState Capstone_diving(Capstone * const me) {
                                 me->dive_time_in_ticks = BSP_get_ticks()
                                                          - me->start_dive_time_in_ticks;
 
-                                me->tts_in_ticks = me->depth_in_mm * (60 * BSP_TICKS_PER_SEC)
+                                me->tts_in_ticks = me->depth_in_mm * (60L * BSP_TICKS_PER_SEC)
                                                    / ASCENT_RATE_LIMIT;
 
                                 Capstone_display_depth(me);

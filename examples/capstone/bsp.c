@@ -98,8 +98,8 @@ ISR(TIMER1_COMPA_vect) {
             QActive_postISR((QActive *)&AO_Capstone, HEARTBEAT_SIG, 0);
         }
 
-    if(!(ADCSRA & _BV(ADSC)));
-    QActive_postISR((QActive *)&AO_Capstone, ASCENT_RATE_ADC_SIG, ADC);
+    if(!(ADCSRA & _BV(ADSC)))
+        QActive_postISR((QActive *)&AO_Capstone, ASCENT_RATE_ADC_SIG, ADC);
 
     QF_tick();
     ++l_nticks;                            /* account for another time tick */
@@ -125,10 +125,10 @@ void BSP_init(void) {
 /*..........................................................................*/
 void QF_onStartup(void) {
     /* set Timer2 in CTC mode, 1/1024 prescaler, start the timer ticking */
-    TIMSK = (1 << OCIE1A);
-    TCCR1B = (1 << WGM12);
-    TCCR1B |= (1 << CS12) | (1 << CS10);
-    OCR1A = ((F_CPU / BSP_TICKS_PER_SEC / 1024) - 1);          /* keep last */
+    TCCR1B = _BV(WGM12);
+    TCCR1B |= _BV(CS12) | _BV(CS10);
+    TIMSK = _BV(OCIE1A);
+    OCR1A = (2*(F_CPU / BSP_TICKS_PER_SEC / 1024) - 1);          /* keep last */
 
     GICR = _BV(INT0) | _BV(INT1);                   /* Enable INT0 and INT1 */
     MCUCR = 0x00;                                  /* Trigger INT0 and INT1 */

@@ -33,6 +33,7 @@
 #define ADC_LED        0     //RED
 #define HEARTBEAT_LED  4     //GREEN
 #define SURFACE_LED    1     //YELLOW
+#define BUZZER         7
 
 #define LCD_DEPTH_Y             1
 #define LCD_DEPTH_X             9
@@ -60,7 +61,7 @@
 #define GAS_SAFETY_MARGIN  \
     ((CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE) / 5)
 
-#define GAS_INCREMENT_IN_CL      500
+#define GAS_INCREMENT_IN_CL      1000
 
 /** conversion from raw A2D reading to ascent/descent rate in mm/min */
 #define ASCENT_RATE_MM_PER_MIN(raw_) \

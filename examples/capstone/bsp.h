@@ -3,7 +3,6 @@
                                                           /* CPU clock [Hz] */
 #define F_CPU                16000000UL
 
-                                              /* Sys timer tick per seconds */
 #define BSP_TICKS_PER_SEC    50
 
 void BSP_init(void);

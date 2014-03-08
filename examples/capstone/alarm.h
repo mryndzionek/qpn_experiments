@@ -18,6 +18,9 @@
 #ifndef __ALARM_H__
 #define __ALARM_H__
 
+#define SHORT_PULSE    BSP_TICKS_PER_SEC/10
+#define LONG_PULSE     BSP_TICKS_PER_SEC
+
 // active objects ................................................*/
 /* @(/1/5) .................................................................*/
 void AlarmMgr_ctor(void);
