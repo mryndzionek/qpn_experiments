@@ -3,7 +3,7 @@
                                                           /* CPU clock [Hz] */
 #define F_CPU                16000000UL
 
-#define BSP_TICKS_PER_SEC    50
+#define BSP_TICKS_PER_SEC    40
 
 void BSP_init(void);
 void BSP_ledOn(uint8_t led_num);

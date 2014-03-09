@@ -115,13 +115,18 @@ static QState Capstone_initial(Capstone * const me) {
     me->dt_tts_sel            = 0;
 
     BSP_lcdStr(LCD_DEPTH_X, LCD_DEPTH_Y, "Dpt");
-    return Q_TRAN(&Capstone_surfaced);
+    return Q_TRAN(&Capstone_always);
 }
 /* @(/1/0/13/1) ............................................................*/
 static QState Capstone_always(Capstone * const me) {
     QState status_;
     switch (Q_SIG(me)) {
         /* @(/1/0/13/1/0) */
+        case Q_INIT_SIG: {
+            status_ = Q_TRAN(&Capstone_surfaced);
+            break;
+        }
+        /* @(/1/0/13/1/1) */
         case HEARTBEAT_SIG: {
             BSP_ADCstart();
             BSP_ledOn(ADC_LED);
@@ -136,7 +141,7 @@ static QState Capstone_always(Capstone * const me) {
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/13/1/1) */
+        /* @(/1/0/13/1/2) */
         case DT_TTS_SIG: {
             if (me->dt_tts_sel) {
                 BSP_lcdStr(LCD_TTS_X, LCD_TTS_Y, "TTS");
@@ -152,7 +157,7 @@ static QState Capstone_always(Capstone * const me) {
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/13/1/2) */
+        /* @(/1/0/13/1/3) */
         case BTN2_DOWN_SIG: {
             if (me->depth_units[0] == 'm') {
                 me->depth_units[0] = 'f';
@@ -171,11 +176,11 @@ static QState Capstone_always(Capstone * const me) {
     }
     return status_;
 }
-/* @(/1/0/13/1/3) ..........................................................*/
+/* @(/1/0/13/1/4) ..........................................................*/
 static QState Capstone_surfaced(Capstone * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/13/1/3) */
+        /* @(/1/0/13/1/4) */
         case Q_ENTRY_SIG: {
             BSP_ledOn(SURFACE_LED);
             me->depth_in_mm = 0;
@@ -187,39 +192,36 @@ static QState Capstone_surfaced(Capstone * const me) {
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/13/1/3) */
+        /* @(/1/0/13/1/4) */
         case Q_EXIT_SIG: {
             BSP_ledOff(SURFACE_LED);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/13/1/3/0) */
+        /* @(/1/0/13/1/4/0) */
         case BTN1_UP_SIG: {
             Capstone_display_pressure(me);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/13/1/3/1) */
+        /* @(/1/0/13/1/4/1) */
         case BTN1_DOWN_SIG: {
             status_ = Q_TRAN(&Capstone_adding_gas);
             break;
         }
-        /* @(/1/0/13/1/3/2) */
+        /* @(/1/0/13/1/4/2) */
         case ASCENT_RATE_ADC_SIG: {
             BSP_ledOff(ADC_LED);
 
             me->ascent_rate_in_mm_per_sec =
                 ASCENT_RATE_MM_PER_MIN((uint16_t)Q_PAR(me));
 
-            me->depth_in_mm -=
-                depth_change_in_mm(me->ascent_rate_in_mm_per_sec);
-
-            /* @(/1/0/13/1/3/2/0) */
+            /* @(/1/0/13/1/4/2/0) */
             if (me->ascent_rate_in_mm_per_sec >= 0) {
                 me->ascent_rate_in_mm_per_sec = 0;
                 status_ = Q_HANDLED();
             }
-            /* @(/1/0/13/1/3/2/1) */
+            /* @(/1/0/13/1/4/2/1) */
             else {
                 status_ = Q_TRAN(&Capstone_diving);
             }
@@ -232,29 +234,29 @@ static QState Capstone_surfaced(Capstone * const me) {
     }
     return status_;
 }
-/* @(/1/0/13/1/3/3) ........................................................*/
+/* @(/1/0/13/1/4/3) ........................................................*/
 static QState Capstone_adding_gas(Capstone * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/13/1/3/3) */
+        /* @(/1/0/13/1/4/3) */
         case Q_ENTRY_SIG: {
             QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/13/1/3/3) */
+        /* @(/1/0/13/1/4/3) */
         case Q_EXIT_SIG: {
             QActive_disarm((QActive *)me);
             Capstone_display_pressure(me);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/13/1/3/3/0) */
+        /* @(/1/0/13/1/4/3/0) */
         case BTN1_UP_SIG: {
             status_ = Q_TRAN(&Capstone_surfaced);
             break;
         }
-        /* @(/1/0/13/1/3/3/1) */
+        /* @(/1/0/13/1/4/3/1) */
         case Q_TIMEOUT_SIG: {
             if (me->gas_in_cylinder_in_cl + GAS_INCREMENT_IN_CL
                             <= (CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE))
@@ -276,33 +278,33 @@ static QState Capstone_adding_gas(Capstone * const me) {
     }
     return status_;
 }
-/* @(/1/0/13/1/4) ..........................................................*/
+/* @(/1/0/13/1/5) ..........................................................*/
 static QState Capstone_diving(Capstone * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/13/1/4) */
+        /* @(/1/0/13/1/5) */
         case Q_ENTRY_SIG: {
             me->start_dive_time_in_ticks = BSP_get_ticks();
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/13/1/4) */
+        /* @(/1/0/13/1/5) */
         case Q_EXIT_SIG: {
             QActive_post((QActive *)&AO_AlarmMgr, ALARM_SILENCE_SIG, ALL_ALARMS);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/13/1/4/0) */
+        /* @(/1/0/13/1/5/0) */
         case ASCENT_RATE_ADC_SIG: {
                         BSP_ledOff(ADC_LED);
 
                         me->ascent_rate_in_mm_per_sec =
                             ASCENT_RATE_MM_PER_MIN((uint16_t)Q_PAR(me));
 
-                                        /* integrate the depth based on the ascent rate */
+                        /* integrate the depth based on the ascent rate */
                         me->depth_in_mm -=
                             depth_change_in_mm(me->ascent_rate_in_mm_per_sec);
-            /* @(/1/0/13/1/4/0/0) */
+            /* @(/1/0/13/1/5/0/0) */
             if (me->depth_in_mm > 0) {
                                 uint32_t consumed_gas_in_cl = gas_rate_in_cl(me->depth_in_mm);
 
@@ -352,7 +354,7 @@ static QState Capstone_diving(Capstone * const me) {
                                 return Q_HANDLED();
                 status_ = Q_HANDLED();
             }
-            /* @(/1/0/13/1/4/0/1) */
+            /* @(/1/0/13/1/5/0/1) */
             else {
                 status_ = Q_TRAN(&Capstone_surfaced);
             }

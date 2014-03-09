@@ -15,10 +15,10 @@
 **/
 #define __scuba_h
 
-                 /** maximum allowed ascent rate in mm/min */
+/** maximum allowed ascent rate in mm/min */
 #define ASCENT_RATE_LIMIT    15000L
 
-#define depth_change_in_mm(ascent_rate)  ((ascent_rate) / (2 * 60))
+#define depth_change_in_mm(ascent_rate)  ((ascent_rate) / (2L * 60))
 uint32_t gas_rate_in_cl(int32_t depth_in_mm);
 uint32_t gas_to_surface_in_cl(int32_t depth_in_mm);
 

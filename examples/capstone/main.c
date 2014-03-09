@@ -20,8 +20,8 @@
 #include "capstone.h"
 #include "alarm.h"
 /*..........................................................................*/
-static QEvt l_capstoneQueue[10];
-static QEvt l_alarmQueue[10];
+static QEvt l_capstoneQueue[5];
+static QEvt l_alarmQueue[5];
 
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {

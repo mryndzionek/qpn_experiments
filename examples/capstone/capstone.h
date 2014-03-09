@@ -61,7 +61,7 @@
 #define GAS_SAFETY_MARGIN  \
     ((CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE) / 5)
 
-#define GAS_INCREMENT_IN_CL      1000
+#define GAS_INCREMENT_IN_CL      2000
 
 /** conversion from raw A2D reading to ascent/descent rate in mm/min */
 #define ASCENT_RATE_MM_PER_MIN(raw_) \

@@ -87,8 +87,6 @@ static QState AlarmMgr_on(AlarmMgr * const me) {
             else {
                 me->active_alarms |= _BV(alarm_type);
                 me->curr_alarm = getBitPosition(me->active_alarms);
-                BSP_lcdStr(1,1, bin2dec3(me->active_alarms));
-                BSP_lcdStr(1,2, bin2dec3(me->curr_alarm));
                 status_ = Q_TRAN(&AlarmMgr_playing);
             }
             break;
@@ -114,8 +112,6 @@ static QState AlarmMgr_on(AlarmMgr * const me) {
                     /* @(/1/1/3/1/1/1/1/0) */
                     if (me->curr_alarm != alarm_type) {
                         me->curr_alarm = alarm_type;
-                        BSP_lcdStr(1,1, bin2dec3(me->active_alarms));
-                        BSP_lcdStr(1,2, bin2dec3(me->curr_alarm));
                         status_ = Q_TRAN(&AlarmMgr_playing);
                     }
                     /* @(/1/1/3/1/1/1/1/1) */

@@ -98,21 +98,26 @@ ISR(TIMER1_COMPA_vect) {
             QActive_postISR((QActive *)&AO_Capstone, HEARTBEAT_SIG, 0);
         }
 
-    if(!(ADCSRA & _BV(ADSC)))
-        QActive_postISR((QActive *)&AO_Capstone, ASCENT_RATE_ADC_SIG, ADC);
-
     QF_tick();
     ++l_nticks;                            /* account for another time tick */
+}
+/*..........................................................................*/
+ISR(ADC_vect)
+{
+        ADCSRA &= ~_BV(ADIE);
+        QActive_postISR((QActive *)&AO_Capstone, ASCENT_RATE_ADC_SIG, ADC);
 }
 /*..........................................................................*/
 void BSP_init(void) {
     DDRD = 0xFF & ~(_BV(PD2) | _BV(PD3));
     LED_OFF_ALL();                                     /* turn off all LEDs */
 
-    // Select Vref=AVcc
-    ADMUX |= (1<<REFS0);
+    ADMUX = 0;         // use #1 ADC
+    ADMUX |= _BV(REFS0);    // use AVcc as the reference
+    ADMUX &= ~_BV(ADLAR);   // clear for 10 bit resolution
+
     //set prescaller to 128 and enable ADC - 125kHz clock
-    ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN);
+    ADCSRA |= _BV(ADPS2)|_BV(ADPS1)|_BV(ADPS0)|_BV(ADEN);
 
     lcd_init();
 
@@ -128,7 +133,7 @@ void QF_onStartup(void) {
     TCCR1B = _BV(WGM12);
     TCCR1B |= _BV(CS12) | _BV(CS10);
     TIMSK = _BV(OCIE1A);
-    OCR1A = (2*(F_CPU / BSP_TICKS_PER_SEC / 1024) - 1);          /* keep last */
+    OCR1A = ((F_CPU / BSP_TICKS_PER_SEC / 1024) - 1);          /* keep last */
 
     GICR = _BV(INT0) | _BV(INT1);                   /* Enable INT0 and INT1 */
     MCUCR = 0x00;                                  /* Trigger INT0 and INT1 */
@@ -247,8 +252,7 @@ uint32_t BSP_get_ticks(void) {
 }
 /*..........................................................................*/
 void BSP_ADCstart(void) {
-    //select ADC channel with safety mask
-    ADMUX = (ADMUX & 0xF0) | (ADC_CHANNEL & 0x0F);
+    ADCSRA |= _BV(ADIE);
     //single conversion mode
     ADCSRA |= _BV(ADSC);
 }
