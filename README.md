@@ -8,6 +8,7 @@ Some tests/examples of the [QP-framework](http://www.state-machine.com/qp/qpn/)
 
 - learn the to use the framework and RTOS concepts 
 - investigate performance/limitations while using low-end hardware
+- determine usefulness of UML Statecharts modelling
 
 Dependencies
 ------------
@@ -56,7 +57,7 @@ Implemented examples
 * simple LED blink example - to test the setup and gcc compilation options
 ![blink](images/blink.png?raw=true "simple LED blink")
 
-* basic 'safety critical' system - **PE**destrian **LI**ght **CON**trolled crossing
+* basic 'safety critical' system - **PE**destrian **LI**ght **CON**trolled crossing (more info [here](http://www.state-machine.com/resources/AN_PELICAN.pdf))
 ![pelican](images/pelican.png?raw=true "Pelican crossing example")
 
 | Pin  | Peripheral|
@@ -75,10 +76,31 @@ Implemented examples
 | PC2  | On/Off button |
 | PC3  | 'Pedestrians waiting' button |
 
+* Capstone Dive Computer (more info [here](http://www.state-machine.com/resources/AN_Capstone.pdf) and [here](http://www.barrgroup.com/Dive-Computer))
+![capstone](images/capstone.png?raw=true "Capstone dive computer example")
+![capstone_alarm](images/alarm.png?raw=true "Capstone alarm SM")
+
+| Pin  | Peripheral|
+| ------------- | -------------|
+| PD0  | ADC conversion LED (ascent rate) |
+| PD1  | 'surfaced' LED |
+| PD4  | heartbeat LED |
+| PD5  | idle LED (UV) |
+| PD7  | 5V alarm buzzer - using NPN transistor |
+| PC0  | LCD RS |
+| PC1  | LCD EN |
+| PC2  | LCD D4 |
+| PC3  | LCD D5 |
+| PC4  | LCD D6 |
+| PC5  | LCD D7 |
+| PC2  | button one |
+| PC3  | button two |
+| PA0  | ADC ascent rate control |
+
 Notes and Things to Investigate
 -------------------------------
 
-* QM tool PNG export does not work on Linux (Mint)
+* QM graphical modeling tool does quite a nice job of alleviating the burden of SM code creation and maintenance 
 * Use the latest QP-nano release to test the new QMsm class
 
 Contact
