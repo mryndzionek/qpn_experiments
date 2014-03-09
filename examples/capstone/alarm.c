@@ -70,20 +70,25 @@ void AlarmMgr_ctor(void) {
 /* @(/1/1/3) ...............................................................*/
 /* @(/1/1/3/0) */
 static QState AlarmMgr_initial(AlarmMgr * const me) {
-    return Q_TRAN(&AlarmMgr_silent);
+    return Q_TRAN(&AlarmMgr_on);
 }
 /* @(/1/1/3/1) .............................................................*/
 static QState AlarmMgr_on(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
         /* @(/1/1/3/1/0) */
+        case Q_INIT_SIG: {
+            status_ = Q_TRAN(&AlarmMgr_silent);
+            break;
+        }
+        /* @(/1/1/3/1/1) */
         case ALARM_REQUEST_SIG: {
             uint8_t alarm_type = (uint8_t)Q_PAR(me);
-            /* @(/1/1/3/1/0/0) */
+            /* @(/1/1/3/1/1/0) */
             if (me->active_alarms & _BV(alarm_type)) {
                 status_ = Q_HANDLED();
             }
-            /* @(/1/1/3/1/0/1) */
+            /* @(/1/1/3/1/1/1) */
             else {
                 me->active_alarms |= _BV(alarm_type);
                 me->curr_alarm = getBitPosition(me->active_alarms);
@@ -91,30 +96,30 @@ static QState AlarmMgr_on(AlarmMgr * const me) {
             }
             break;
         }
-        /* @(/1/1/3/1/1) */
+        /* @(/1/1/3/1/2) */
         case ALARM_SILENCE_SIG: {
             uint8_t alarm_type = (uint8_t)Q_PAR(me);
-            /* @(/1/1/3/1/1/0) */
+            /* @(/1/1/3/1/2/0) */
             if (alarm_type == ALL_ALARMS) {
                 me->active_alarms = 0;
                 status_ = Q_TRAN(&AlarmMgr_silent);
             }
-            /* @(/1/1/3/1/1/1) */
+            /* @(/1/1/3/1/2/1) */
             else {
                 me->active_alarms &= ~_BV(alarm_type);
-                /* @(/1/1/3/1/1/1/0) */
+                /* @(/1/1/3/1/2/1/0) */
                 if (me->active_alarms == 0) {
                     status_ = Q_TRAN(&AlarmMgr_silent);
                 }
-                /* @(/1/1/3/1/1/1/1) */
+                /* @(/1/1/3/1/2/1/1) */
                 else {
                     alarm_type = getBitPosition(me->active_alarms);
-                    /* @(/1/1/3/1/1/1/1/0) */
+                    /* @(/1/1/3/1/2/1/1/0) */
                     if (me->curr_alarm != alarm_type) {
                         me->curr_alarm = alarm_type;
                         status_ = Q_TRAN(&AlarmMgr_playing);
                     }
-                    /* @(/1/1/3/1/1/1/1/1) */
+                    /* @(/1/1/3/1/2/1/1/1) */
                     else {
                         status_ = Q_HANDLED();
                     }
@@ -129,11 +134,11 @@ static QState AlarmMgr_on(AlarmMgr * const me) {
     }
     return status_;
 }
-/* @(/1/1/3/1/2) ...........................................................*/
+/* @(/1/1/3/1/3) ...........................................................*/
 static QState AlarmMgr_silent(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/1/3/1/2) */
+        /* @(/1/1/3/1/3) */
         case Q_ENTRY_SIG: {
             BSP_ledOff(BUZZER);
             me->curr_alarm = 0;
@@ -148,17 +153,17 @@ static QState AlarmMgr_silent(AlarmMgr * const me) {
     }
     return status_;
 }
-/* @(/1/1/3/1/3) ...........................................................*/
+/* @(/1/1/3/1/4) ...........................................................*/
 static QState AlarmMgr_playing(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/1/3/1/3) */
+        /* @(/1/1/3/1/4) */
         case Q_ENTRY_SIG: {
             me->count = 0;
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/1/3/1/3/0) */
+        /* @(/1/1/3/1/4/0) */
         case Q_INIT_SIG: {
             status_ = Q_TRAN(&AlarmMgr_beep);
             break;
@@ -170,31 +175,31 @@ static QState AlarmMgr_playing(AlarmMgr * const me) {
     }
     return status_;
 }
-/* @(/1/1/3/1/3/1) .........................................................*/
+/* @(/1/1/3/1/4/1) .........................................................*/
 static QState AlarmMgr_beep(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/1/3/1/3/1) */
+        /* @(/1/1/3/1/4/1) */
         case Q_ENTRY_SIG: {
             BSP_ledOn(BUZZER);
             QActive_arm((QActive *)me, SHORT_PULSE);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/1/3/1/3/1) */
+        /* @(/1/1/3/1/4/1) */
         case Q_EXIT_SIG: {
             QActive_disarm((QActive *)me);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/1/3/1/3/1/0) */
+        /* @(/1/1/3/1/4/1/0) */
         case Q_TIMEOUT_SIG: {
             ++me->count;
-            /* @(/1/1/3/1/3/1/0/0) */
+            /* @(/1/1/3/1/4/1/0/0) */
             if (me->count == me->curr_alarm) {
                 status_ = Q_TRAN(&AlarmMgr_long_off);
             }
-            /* @(/1/1/3/1/3/1/0/1) */
+            /* @(/1/1/3/1/4/1/0/1) */
             else {
                 status_ = Q_TRAN(&AlarmMgr_off);
             }
@@ -207,24 +212,24 @@ static QState AlarmMgr_beep(AlarmMgr * const me) {
     }
     return status_;
 }
-/* @(/1/1/3/1/3/2) .........................................................*/
+/* @(/1/1/3/1/4/2) .........................................................*/
 static QState AlarmMgr_off(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/1/3/1/3/2) */
+        /* @(/1/1/3/1/4/2) */
         case Q_ENTRY_SIG: {
             BSP_ledOff(BUZZER);
             QActive_arm((QActive *)me, SHORT_PULSE);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/1/3/1/3/2) */
+        /* @(/1/1/3/1/4/2) */
         case Q_EXIT_SIG: {
             QActive_disarm((QActive *)me);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/1/3/1/3/2/0) */
+        /* @(/1/1/3/1/4/2/0) */
         case Q_TIMEOUT_SIG: {
             status_ = Q_TRAN(&AlarmMgr_beep);
             break;
@@ -236,24 +241,24 @@ static QState AlarmMgr_off(AlarmMgr * const me) {
     }
     return status_;
 }
-/* @(/1/1/3/1/3/3) .........................................................*/
+/* @(/1/1/3/1/4/3) .........................................................*/
 static QState AlarmMgr_long_off(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/1/3/1/3/3) */
+        /* @(/1/1/3/1/4/3) */
         case Q_ENTRY_SIG: {
             BSP_ledOff(BUZZER);
             QActive_arm((QActive *)me, LONG_PULSE);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/1/3/1/3/3) */
+        /* @(/1/1/3/1/4/3) */
         case Q_EXIT_SIG: {
             QActive_disarm((QActive *)me);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/1/3/1/3/3/0) */
+        /* @(/1/1/3/1/4/3/0) */
         case Q_TIMEOUT_SIG: {
             me->count = 0;
             status_ = Q_TRAN(&AlarmMgr_beep);

@@ -59,13 +59,13 @@ me-&gt;heartbeat_led_sel = 0;
 me-&gt;dt_tts_sel            = 0;
 
 BSP_lcdStr(LCD_DEPTH_X, LCD_DEPTH_Y, &quot;Dpt&quot;);</action>
-     <initial_glyph conn="30,9,5,0,23,5">
+     <initial_glyph conn="31,1,5,0,20,4">
       <action box="3,1,4,3"/>
      </initial_glyph>
     </initial>
     <state name="always">
      <initial target="../4">
-      <initial_glyph conn="32,20,5,0,11,10">
+      <initial_glyph conn="30,11,5,0,11,10">
        <action box="0,-2,6,2"/>
       </initial_glyph>
      </initial>
@@ -80,7 +80,7 @@ else {
 }
 me-&gt;heartbeat_led_sel = !me-&gt;heartbeat_led_sel;
 QActive_arm((QActive *)me, HEARTBEAT_TOUT);</action>
-      <tran_glyph conn="4,27,3,-1,21">
+      <tran_glyph conn="2,18,3,-1,21">
        <action box="0,-2,11,2"/>
       </tran_glyph>
      </tran>
@@ -96,8 +96,8 @@ else {
         ticks2min_sec(me-&gt;dive_time_in_ticks));
 }
 me-&gt;dt_tts_sel = !me-&gt;dt_tts_sel;</action>
-      <tran_glyph conn="86,27,1,-1,-19">
-       <action box="-11,0,11,2"/>
+      <tran_glyph conn="2,11,3,-1,17">
+       <action box="0,-2,11,2"/>
       </tran_glyph>
      </tran>
      <tran trig="BTN2_DOWN">
@@ -108,8 +108,8 @@ else {
     me-&gt;depth_units[0] = 'm';
 }
 Capstone_display_depth(me);</action>
-      <tran_glyph conn="86,46,1,-1,-16">
-       <action box="-13,0,12,2"/>
+      <tran_glyph conn="2,14,3,-1,17">
+       <action box="0,-2,12,2"/>
       </tran_glyph>
      </tran>
      <state name="surfaced">
@@ -123,12 +123,12 @@ Capstone_display_assent(me);</entry>
       <exit>BSP_ledOff(SURFACE_LED);</exit>
       <tran trig="BTN1_UP">
        <action>Capstone_display_pressure(me);</action>
-       <tran_glyph conn="8,39,3,-1,30">
+       <tran_glyph conn="6,30,3,-1,30">
         <action box="0,-2,25,4"/>
        </tran_glyph>
       </tran>
       <tran trig="BTN1_DOWN" target="../3">
-       <tran_glyph conn="8,46,3,0,21,3">
+       <tran_glyph conn="6,37,3,0,21,3">
         <action box="0,-2,13,2"/>
        </tran_glyph>
       </tran>
@@ -141,17 +141,17 @@ me-&gt;ascent_rate_in_mm_per_sec =
        <choice>
         <guard>me-&gt;ascent_rate_in_mm_per_sec &gt;= 0</guard>
         <action>me-&gt;ascent_rate_in_mm_per_sec = 0;</action>
-        <choice_glyph conn="36,71,5,-1,15">
+        <choice_glyph conn="34,62,5,-1,15">
          <action box="1,0,32,4"/>
         </choice_glyph>
        </choice>
        <choice target="../../../5">
         <guard>else</guard>
-        <choice_glyph conn="36,71,4,0,8">
+        <choice_glyph conn="34,62,4,0,8">
          <action box="-6,3,6,2"/>
         </choice_glyph>
        </choice>
-       <tran_glyph conn="8,71,3,-1,28">
+       <tran_glyph conn="6,62,3,-1,28">
         <action box="0,-2,18,2"/>
        </tran_glyph>
       </tran>
@@ -160,7 +160,7 @@ me-&gt;ascent_rate_in_mm_per_sec =
        <exit>QActive_disarm((QActive *)me);
 Capstone_display_pressure(me);</exit>
        <tran trig="BTN1_UP" target="../..">
-        <tran_glyph conn="12,63,3,1,51">
+        <tran_glyph conn="10,54,3,1,51">
          <action box="0,-2,9,2"/>
         </tran_glyph>
        </tran>
@@ -175,16 +175,16 @@ else {                                  /* the cylinder is full */
     BSP_lcdStr(LCD_CP_X + 2, LCD_CP_Y, &quot;FULL&quot;);
 }
 QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
-        <tran_glyph conn="12,57,3,-1,21">
+        <tran_glyph conn="10,48,3,-1,21">
          <action box="0,-2,12,2"/>
         </tran_glyph>
        </tran>
-       <state_glyph node="12,49,29,18">
+       <state_glyph node="10,40,29,18">
         <entry box="1,2,6,2"/>
         <exit box="1,4,5,2"/>
        </state_glyph>
       </state>
-      <state_glyph node="8,30,55,47">
+      <state_glyph node="6,21,55,47">
        <entry box="1,2,5,2"/>
        <exit box="1,4,5,2"/>
       </state_glyph>
@@ -249,28 +249,28 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
                 }
 
                 return Q_HANDLED();</action>
-        <choice_glyph conn="36,87,4,-1,-3,20">
+        <choice_glyph conn="34,78,4,-1,-3,20">
          <action box="3,-2,17,2"/>
         </choice_glyph>
        </choice>
        <choice target="../../../4">
         <guard>else</guard>
-        <choice_glyph conn="36,87,4,1,9,34,-30,-7">
+        <choice_glyph conn="34,78,4,1,9,34,-30,-7">
          <action box="1,5,6,2"/>
         </choice_glyph>
        </choice>
-       <tran_glyph conn="7,87,3,-1,29">
+       <tran_glyph conn="5,78,3,-1,29">
         <action box="0,-2,17,2"/>
        </tran_glyph>
       </tran>
-      <state_glyph node="7,79,59,22">
+      <state_glyph node="5,70,59,22">
        <entry box="1,2,5,2"/>
        <exit box="1,4,5,2"/>
       </state_glyph>
      </state>
-     <state_glyph node="4,14,82,89"/>
+     <state_glyph node="2,5,68,89"/>
     </state>
-    <state_diagram size="89,105"/>
+    <state_diagram size="73,98"/>
    </statechart>
   </class>
   <class name="AlarmMgr" superclass="qpn::QActive">
@@ -278,57 +278,62 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
    <attribute name="active_alarms" type="uint8_t" visibility="0x02" properties="0x00"/>
    <attribute name="count" type="uint8_t" visibility="0x02" properties="0x00"/>
    <statechart>
-    <initial target="../1/2">
-     <initial_glyph conn="11,3,5,0,34,30">
+    <initial target="../1">
+     <initial_glyph conn="33,4,5,0,21,4">
       <action box="0,-2,6,2"/>
      </initial_glyph>
     </initial>
     <state name="on">
+     <initial target="../3">
+      <initial_glyph conn="38,36,5,0,7,4">
+       <action box="0,-2,6,2"/>
+      </initial_glyph>
+     </initial>
      <tran trig="ALARM_REQUEST">
       <action>uint8_t alarm_type = (uint8_t)Q_PAR(me);</action>
       <choice>
        <guard>me-&gt;active_alarms &amp; _BV(alarm_type)</guard>
-       <choice_glyph conn="72,17,5,-1,-19">
+       <choice_glyph conn="59,17,5,-1,-19">
         <action box="-19,0,18,2"/>
        </choice_glyph>
       </choice>
-      <choice target="../../3">
+      <choice target="../../4">
        <guard>else</guard>
        <action>me-&gt;active_alarms |= _BV(alarm_type);
 me-&gt;curr_alarm = getBitPosition(me-&gt;active_alarms);</action>
-       <choice_glyph conn="72,17,5,0,9,16">
-        <action box="2,6,6,2"/>
+       <choice_glyph conn="59,17,5,1,11,56,-8">
+        <action box="4,12,6,2"/>
        </choice_glyph>
       </choice>
-      <tran_glyph conn="120,13,1,-1,-48,4">
+      <tran_glyph conn="73,13,1,-1,-14,4">
        <action box="-15,-2,15,2"/>
       </tran_glyph>
      </tran>
      <tran trig="ALARM_SILENCE">
       <action>uint8_t alarm_type = (uint8_t)Q_PAR(me);</action>
-      <choice target="../../2">
+      <choice target="../../3">
        <guard>alarm_type == ALL_ALARMS</guard>
        <action>me-&gt;active_alarms = 0;</action>
-       <choice_glyph conn="23,19,5,0,10,14">
+       <choice_glyph conn="23,19,5,0,10,21">
         <action box="10,2,5,2"/>
        </choice_glyph>
       </choice>
       <choice>
        <guard>else</guard>
        <action>me-&gt;active_alarms &amp;= ~_BV(alarm_type);</action>
-       <choice target="../../../2">
+       <choice target="../../../3">
         <guard>me-&gt;active_alarms == 0</guard>
-        <choice_glyph conn="23,25,5,0,-9,8">
+        <choice_glyph conn="23,25,5,0,-9,15">
          <action box="1,0,6,2"/>
         </choice_glyph>
        </choice>
        <choice>
         <guard>else</guard>
         <action>alarm_type = getBitPosition(me-&gt;active_alarms);</action>
-        <choice target="../../../../3">
+        <choice target="../../../../4">
          <guard>me-&gt;curr_alarm != alarm_type</guard>
          <action>me-&gt;curr_alarm = alarm_type;</action>
-         <choice_glyph conn="56,36,5,3,8,8,2">
+         <choice_glyph conn="56,36,5,1,10,33,-4">
           <action box="1,0,6,2"/>
          </choice_glyph>
         </choice>
@@ -354,14 +359,14 @@ me-&gt;curr_alarm = getBitPosition(me-&gt;active_alarms);</action>
       <entry>BSP_ledOff(BUZZER);
 me-&gt;curr_alarm = 0;
 me-&gt;active_alarms = 0;</entry>
-      <state_glyph node="8,33,41,26">
+      <state_glyph node="8,40,41,11">
        <entry box="1,2,7,2"/>
       </state_glyph>
      </state>
      <state name="playing">
       <entry>me-&gt;count = 0;</entry>
       <initial target="../1">
-       <initial_glyph conn="85,36,5,0,-7,1">
+       <initial_glyph conn="28,58,5,0,-7,1">
         <action box="0,-2,6,2"/>
        </initial_glyph>
       </initial>
@@ -373,21 +378,21 @@ QActive_arm((QActive *)me, SHORT_PULSE);</entry>
         <action>++me-&gt;count;</action>
         <choice target="../../../3">
          <guard>me-&gt;count == me-&gt;curr_alarm</guard>
-         <choice_glyph conn="86,56,4,0,-18,28,2">
-          <action box="0,-9,6,2"/>
+         <choice_glyph conn="29,78,4,0,-18,28,2">
+          <action box="4,-20,22,2"/>
          </choice_glyph>
         </choice>
         <choice target="../../../2">
          <guard>else</guard>
-         <choice_glyph conn="86,56,5,3,3,-4,2">
-          <action box="0,-3,6,2"/>
+         <choice_glyph conn="29,78,5,3,5">
+          <action box="1,0,6,2"/>
          </choice_glyph>
         </choice>
-        <tran_glyph conn="69,56,3,-1,17">
+        <tran_glyph conn="12,78,3,-1,17">
          <action box="0,-2,12,2"/>
         </tran_glyph>
        </tran>
-       <state_glyph node="69,37,12,28">
+       <state_glyph node="12,59,12,28">
         <entry box="1,2,5,2"/>
         <exit box="1,4,5,2"/>
        </state_glyph>
@@ -397,11 +402,11 @@ QActive_arm((QActive *)me, SHORT_PULSE);</entry>
 QActive_arm((QActive *)me, SHORT_PULSE);</entry>
        <exit>QActive_disarm((QActive *)me);</exit>
        <tran trig="Q_TIMEOUT" target="../../1">
-        <tran_glyph conn="104,62,1,3,-35">
+        <tran_glyph conn="47,84,1,3,-35">
          <action box="-10,-2,10,2"/>
         </tran_glyph>
        </tran>
-       <state_glyph node="91,40,13,25">
+       <state_glyph node="34,62,13,25">
         <entry box="1,2,5,2"/>
         <exit box="1,4,5,2"/>
        </state_glyph>
@@ -412,22 +417,22 @@ QActive_arm((QActive *)me, LONG_PULSE);</entry>
        <exit>QActive_disarm((QActive *)me);</exit>
        <tran trig="Q_TIMEOUT" target="../../1">
         <action>me-&gt;count = 0;</action>
-        <tran_glyph conn="117,48,1,3,-48">
+        <tran_glyph conn="60,70,1,3,-48">
          <action box="-10,-2,11,2"/>
         </tran_glyph>
        </tran>
-       <state_glyph node="106,40,11,25">
+       <state_glyph node="49,62,11,25">
         <entry box="1,2,5,2"/>
         <exit box="1,4,5,2"/>
        </state_glyph>
       </state>
-      <state_glyph node="66,33,53,39">
+      <state_glyph node="9,55,53,35">
        <entry box="1,2,5,2"/>
       </state_glyph>
      </state>
-     <state_glyph node="5,8,115,68"/>
+     <state_glyph node="5,8,68,84"/>
     </state>
-    <state_diagram size="122,80"/>
+    <state_diagram size="78,94"/>
    </statechart>
   </class>
   <attribute name="AO_capstone" type="QActive *const" visibility="0x00" properties="0x00"/>
