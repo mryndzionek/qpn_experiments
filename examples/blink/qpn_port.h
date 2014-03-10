@@ -1,5 +1,5 @@
 /*****************************************************************************
-* PELICAN crossing example
+* LED blink example
 * Last Updated for Version: 4.5.02
 * Date of the Last Update:  Sep 17, 2012
 *
