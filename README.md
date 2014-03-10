@@ -50,6 +50,7 @@ ATmega32A on a breadboard. 16MHz crystal. Fuses set to: `-U lfuse:w:0xff:m -U hf
 Serial LED resistors - 120Ohm. 16x2 LCD - HD44780 compatible - 10kOhm contrast pot.
 AREF connected to GND via 100nF cap.
 Detailed function of each peripheral is different for each example.
+![setup](images/setup.png?raw=true "Breadboard setup")
 
 Implemented examples
 --------------------
@@ -79,6 +80,7 @@ Implemented examples
 * Capstone Dive Computer (more info [here](http://www.state-machine.com/resources/AN_Capstone.pdf) and [here](http://www.barrgroup.com/Dive-Computer))
 ![capstone](images/capstone.png?raw=true "Capstone dive computer example")
 ![capstone_alarm](images/alarm.png?raw=true "Capstone alarm SM")
+![capstone_lcd](images/capstone_lcd.png?raw=true "Capstone LCD view")
 
 | Pin  | Peripheral|
 | ------------- | -------------|
