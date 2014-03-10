@@ -366,7 +366,7 @@ me-&gt;active_alarms = 0;</entry>
      <state name="playing">
       <entry>me-&gt;count = 0;</entry>
       <initial target="../1">
-       <initial_glyph conn="28,58,5,0,-7,1">
+       <initial_glyph conn="26,57,5,0,-5,2">
         <action box="0,-2,6,2"/>
        </initial_glyph>
       </initial>
@@ -378,17 +378,17 @@ QActive_arm((QActive *)me, SHORT_PULSE);</entry>
         <action>++me-&gt;count;</action>
         <choice target="../../../3">
          <guard>me-&gt;count == me-&gt;curr_alarm</guard>
-         <choice_glyph conn="29,78,4,0,-18,28,2">
+         <choice_glyph conn="29,67,4,0,-7,28,2">
           <action box="4,-20,22,2"/>
          </choice_glyph>
         </choice>
         <choice target="../../../2">
          <guard>else</guard>
-         <choice_glyph conn="29,78,5,3,5">
+         <choice_glyph conn="29,67,5,3,5">
           <action box="1,0,6,2"/>
          </choice_glyph>
         </choice>
-        <tran_glyph conn="12,78,3,-1,17">
+        <tran_glyph conn="12,67,3,-1,17">
          <action box="0,-2,12,2"/>
         </tran_glyph>
        </tran>
@@ -426,7 +426,7 @@ QActive_arm((QActive *)me, LONG_PULSE);</entry>
         <exit box="1,4,5,2"/>
        </state_glyph>
       </state>
-      <state_glyph node="9,55,53,35">
+      <state_glyph node="9,52,53,38">
        <entry box="1,2,5,2"/>
       </state_glyph>
      </state>
