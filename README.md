@@ -74,8 +74,8 @@ Implemented examples
 | PC3  | LCD D5 |
 | PC4  | LCD D6 |
 | PC5  | LCD D7 |
-| PC2  | On/Off button |
-| PC3  | 'Pedestrians waiting' button |
+| PD2  | On/Off button |
+| PD3  | 'Pedestrians waiting' button |
 
 * Capstone Dive Computer (more info [here](http://www.state-machine.com/resources/AN_Capstone.pdf) and [here](http://www.barrgroup.com/Dive-Computer))
 ![capstone](images/capstone.png?raw=true "Capstone dive computer example")
@@ -95,8 +95,8 @@ Implemented examples
 | PC3  | LCD D5 |
 | PC4  | LCD D6 |
 | PC5  | LCD D7 |
-| PC2  | button one |
-| PC3  | button two |
+| PD2  | button one |
+| PD3  | button two |
 | PA0  | ADC ascent rate control |
 
 Notes and Things to Investigate
