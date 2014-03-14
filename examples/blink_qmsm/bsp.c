@@ -18,7 +18,7 @@ ISR(TIMER1_COMPA_vect) {
     /* No need to clear the interrupt source since the Timer1 compare
      * interrupt is automatically cleared in hardware when the ISR runs.
      */
-    QF_tickXISR(0);
+    QF_tickXISR(0U);
 }
 /*..........................................................................*/
 void BSP_init(void) {
