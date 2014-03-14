@@ -6,6 +6,6 @@
 .settings
 build/
 qm/
-qpn/
+qpn*/
 .*
 !/.gitignore
