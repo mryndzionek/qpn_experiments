@@ -6,7 +6,7 @@ set(VERSION_MINOR 0)
 set(VERSION_PATCH 2)
 set(VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-attributes")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-attributes -fno-strict-aliasing")
 
 configure_file (
   "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"

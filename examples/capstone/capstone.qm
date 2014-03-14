@@ -2,7 +2,7 @@
 <model version="3.0.1">
  <framework name="qpn"/>
  <package name="AOs" stereotype="0x02">
-  <class name="Capstone" superclass="qpn::QActive">
+  <class name="Capstone" superclass="qpn::QMActive">
    <attribute name="heartbeat_led_sel" type="uint8_t" visibility="0x02" properties="0x00"/>
    <attribute name="depth_in_mm" type="int32_t" visibility="0x02" properties="0x00"/>
    <attribute name="depth_units[2]" type="char" visibility="0x02" properties="0x00"/>
@@ -226,26 +226,26 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
                 if (me-&gt;gas_in_cylinder_in_cl &lt;
                     gas_to_surface_in_cl(me-&gt;depth_in_mm) + GAS_SAFETY_MARGIN)
                 {
-                    QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_REQUEST_SIG, OUT_OF_AIR_ALARM);
+                    QACTIVE_POST((QActive *)&amp;AO_AlarmMgr, ALARM_REQUEST_SIG, OUT_OF_AIR_ALARM);
                 }
                 else {
-                    QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_SILENCE_SIG, OUT_OF_AIR_ALARM);
+                    QACTIVE_POST((QActive *)&amp;AO_AlarmMgr, ALARM_SILENCE_SIG, OUT_OF_AIR_ALARM);
                 }
 
                                           /* check the ASCENT_RATE_ALARM... */
                 if (me-&gt;ascent_rate_in_mm_per_sec &gt; ASCENT_RATE_LIMIT) {
-                    QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_REQUEST_SIG, ASCENT_RATE_ALARM);
+                    QACTIVE_POST((QActive *)&amp;AO_AlarmMgr, ALARM_REQUEST_SIG, ASCENT_RATE_ALARM);
                 }
                 else {
-                    QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_SILENCE_SIG, ASCENT_RATE_ALARM);
+                    QACTIVE_POST((QActive *)&amp;AO_AlarmMgr, ALARM_SILENCE_SIG, ASCENT_RATE_ALARM);
                 }
 
                                                 /* check the DEPTH_ALARM... */
                 if (me-&gt;depth_in_mm &gt; MAXIMUM_DEPTH_IN_MM) {
-                    QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_REQUEST_SIG, DEPTH_ALARM);
+                    QACTIVE_POST((QActive *)&amp;AO_AlarmMgr, ALARM_REQUEST_SIG, DEPTH_ALARM);
                 }
                 else {
-                    QActive_post((QActive *)&amp;AO_AlarmMgr, ALARM_SILENCE_SIG, DEPTH_ALARM);
+                    QACTIVE_POST((QActive *)&amp;AO_AlarmMgr, ALARM_SILENCE_SIG, DEPTH_ALARM);
                 }
 
                 return Q_HANDLED();</action>
@@ -273,7 +273,7 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);</action>
     <state_diagram size="73,98"/>
    </statechart>
   </class>
-  <class name="AlarmMgr" superclass="qpn::QActive">
+  <class name="AlarmMgr" superclass="qpn::QMActive">
    <attribute name="curr_alarm" type="uint8_t" visibility="0x02" properties="0x00"/>
    <attribute name="active_alarms" type="uint8_t" visibility="0x02" properties="0x00"/>
    <attribute name="count" type="uint8_t" visibility="0x02" properties="0x00"/>
@@ -435,15 +435,15 @@ QActive_arm((QActive *)me, LONG_PULSE);</entry>
     <state_diagram size="78,94"/>
    </statechart>
   </class>
-  <attribute name="AO_capstone" type="QActive *const" visibility="0x00" properties="0x00"/>
-  <attribute name="AO_AlarmMgr" type="QActive *const" visibility="0x00" properties="0x00"/>
+  <attribute name="AO_capstone" type="QMActive *const" visibility="0x00" properties="0x00"/>
+  <attribute name="AO_AlarmMgr" type="QMActive *const" visibility="0x00" properties="0x00"/>
   <operation name="Capstone_ctor" type="void" visibility="0x00" properties="0x00">
    <documentation>constructor</documentation>
-   <code>QActive_ctor(&amp;AO_Capstone.super, Q_STATE_CAST(&amp;Capstone_initial));</code>
+   <code>QMActive_ctor(&amp;AO_Capstone.super, Q_STATE_CAST(&amp;Capstone_initial));</code>
   </operation>
   <operation name="AlarmMgr_ctor" type="void" visibility="0x00" properties="0x00">
    <documentation>constructor</documentation>
-   <code>QActive_ctor(&amp;AO_AlarmMgr.super, Q_STATE_CAST(&amp;AlarmMgr_initial));</code>
+   <code>QMActive_ctor(&amp;AO_AlarmMgr.super, Q_STATE_CAST(&amp;AlarmMgr_initial));</code>
   </operation>
  </package>
  <directory name=".">

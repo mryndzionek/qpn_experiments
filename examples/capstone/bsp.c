@@ -48,7 +48,7 @@ ISR(INT0_vect)
 {
     if(!btn1_poll)
         {
-            QActive_postISR((QActive *)&AO_Capstone, BTN1_DOWN_SIG, 0);
+            QACTIVE_POST_ISR((QActive *)&AO_Capstone, BTN1_DOWN_SIG, 0);
             btn1_poll = 1;
             GICR &= ~_BV(INT0);
         }
@@ -59,7 +59,7 @@ ISR(INT1_vect)
 {
     if(!btn2_poll)
         {
-            QActive_postISR((QActive *)&AO_Capstone, BTN2_DOWN_SIG, 0);
+            QACTIVE_POST_ISR((QActive *)&AO_Capstone, BTN2_DOWN_SIG, 0);
             btn2_poll = 1;
             GICR &= ~_BV(INT1);
         }
@@ -72,7 +72,7 @@ ISR(TIMER1_COMPA_vect) {
     if(btn1_poll)
         {
             if(PIND & _BV(PC2)) {
-                    QActive_postISR((QActive *)&AO_Capstone, BTN1_UP_SIG, 0);
+                    QACTIVE_POST_ISR((QActive *)&AO_Capstone, BTN1_UP_SIG, 0);
                     btn1_poll = 0;
                     GICR |= _BV(INT0);
             }
@@ -80,7 +80,7 @@ ISR(TIMER1_COMPA_vect) {
     if(btn2_poll)
         {
             if(PIND & _BV(PC3)) {
-                    QActive_postISR((QActive *)&AO_Capstone, BTN2_UP_SIG, 0);
+                    QACTIVE_POST_ISR((QActive *)&AO_Capstone, BTN2_UP_SIG, 0);
                     btn2_poll = 0;
                     GICR |= _BV(INT1);
             }
@@ -89,23 +89,23 @@ ISR(TIMER1_COMPA_vect) {
     if(dt_tts_counter == DT_TTS_TOUT)
         {
             dt_tts_counter = 0;
-            QActive_postISR((QActive *)&AO_Capstone, DT_TTS_SIG, 0);
+            QACTIVE_POST_ISR((QActive *)&AO_Capstone, DT_TTS_SIG, 0);
         }
     heartbeat_counter++;
     if(heartbeat_counter == HEARTBEAT_TOUT)
         {
             heartbeat_counter = 0;
-            QActive_postISR((QActive *)&AO_Capstone, HEARTBEAT_SIG, 0);
+            QACTIVE_POST_ISR((QActive *)&AO_Capstone, HEARTBEAT_SIG, 0);
         }
 
-    QF_tick();
+    QF_tickXISR(0U);
     ++l_nticks;                            /* account for another time tick */
 }
 /*..........................................................................*/
 ISR(ADC_vect)
 {
         ADCSRA &= ~_BV(ADIE);
-        QActive_postISR((QActive *)&AO_Capstone, ASCENT_RATE_ADC_SIG, ADC);
+        QACTIVE_POST_ISR((QActive *)&AO_Capstone, ASCENT_RATE_ADC_SIG, ADC);
 }
 /*..........................................................................*/
 void BSP_init(void) {
