@@ -16,6 +16,5 @@ configure_file (
 set(PROJECT_INCLUDES ${CMAKE_PREFIX_PATH}/include)
 
 include_directories("${PROJECT_INCLUDES}")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/qpn/include")
 
 add_subdirectory(examples)

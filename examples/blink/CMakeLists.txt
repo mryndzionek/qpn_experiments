@@ -1,4 +1,5 @@
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories("${CMAKE_SOURCE_DIR}/qpn/include")
 add_avr_executable(
     blink
     main.c
