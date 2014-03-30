@@ -4,8 +4,8 @@
 #ifndef NDEBUG
 #include <stdlib.h>
 #include <stdio.h>
-#endif
 #include "lcd.h"
+#endif
 
 #define LED_OFF(num_)       (PORTD &= ~(_BV(num_)))
 #define LED_ON(num_)        (PORTD |= _BV(num_))
@@ -25,7 +25,9 @@ void BSP_init(void) {
     DDRD  = 0xFF;                    /* All PORTD pins are outputs for LEDs */
     LED_OFF_ALL();                                     /* turn off all LEDs */
 
+#ifndef NDEBUG
     lcd_init();
+#endif
 }
 /*..........................................................................*/
 void QF_onStartup(void) {
@@ -67,8 +69,8 @@ void Q_onAssert(char const Q_ROM * const Q_ROM_VAR file, int line) {
     (void)line;                                   /* avoid compiler warning */
     QF_INT_DISABLE();
     LED_ON_ALL();                                            /* all LEDs on */
-    lcd_clear();
 #ifndef NDEBUG
+    lcd_clear();
     n = strlen_P(file);
     if(n > 15)
         n = 15;
