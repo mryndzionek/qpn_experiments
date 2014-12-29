@@ -335,6 +335,11 @@ static void decode_220ms(const uint8_t input, const uint8_t bins_to_go) {
             lcd_putstr(bin2dec3(sbins.tick));
 
             sync_mark_binning(decoded_data);
+
+            if(sbins.tick == sbins.max_index)
+                LED_ON(4);
+            else
+                LED_OFF(4);
         }
     }
 }
@@ -436,18 +441,18 @@ bool BSP_convolution(void) {
 void BSP_MsgNotLocked(void) {
 
     lcd_set_line(0);
-    lcd_putstr("phase:???");
+    lcd_putstr("Detecting phase");
 }
 
 /*..........................................................................*/
 void BSP_MsgLocked(void) {
 
+    lcd_clear();
     lcd_set_line(0);
-    lcd_putstr("phase:");
+    lcd_putstr("Phase: ");
     lcd_putstr(bin2dec3(pbins.max_index));
 
     lcd_set_line(1);
-    lcd_putstr("QoS:");
+    lcd_putstr("Syncing...");
     lcd_putstr(bin2dec3(pbins.max));
-    lcd_set_line(0);
 }
