@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<model version="3.0.1">
+<model version="3.2.2">
  <framework name="qpn"/>
  <package name="AOs" stereotype="0x02">
   <class name="Blink" superclass="qpn::QMActive">
@@ -53,7 +53,7 @@ QActive_arm((QActive *)me, BLINK_OFF_TOUT);</entry>
 // active objects ................................................*/
 $declare(AOs::Blink_ctor)
 
-extern struct BlinkTag AO_Blink;
+extern struct Blink AO_Blink;
 
 #endif /* __BLINK_H__ */</text>
    </file>

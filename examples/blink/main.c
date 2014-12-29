@@ -14,7 +14,7 @@
 * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
 * for more details.
 *****************************************************************************/
-/* @(/2/1) .................................................................*/
+/*${.::main.c} .............................................................*/
 #include "qpn_port.h"   /* QP-nano port */
 #include "bsp.h"        /* Board Support Package (BSP) */
 #include "blink.h"      /* application interface */

@@ -24,24 +24,22 @@ Build instructions
 
 2. Edit the gcc-avr options in `qpn_experiments/toolchain-avr-gcc.make` file
 
-3. Download the QP-nano framework (4.5.02a) from [here](http://sourceforge.net/projects/qpc/files/QP-nano/4.5.02a/) and unpack it into `qpn` subdirectory
+3. Download the QP-nano framework (5.3.0) from [here](http://sourceforge.net/projects/qpc/files/QP-nano/5.3.0/) and unpack it into `qpn` subdirectory
 
-4. Download the QP-nano framework (5.2.0) from [here](http://sourceforge.net/projects/qpc/files/QP-nano/5.2.0/) and unpack it into `qpn_5.2.0` subdirectory
+4. Download the [QM](http://sourceforge.net/projects/qpc/files/QM/3.2.2/) Graphical Modeling Tool (optional - to open the `*.qm` files)
 
-5. Download the [QM](http://sourceforge.net/projects/qpc/files/QM/3.0.1/) Graphical Modeling Tool (optional - to open the `*.qm` files)
-
-6. Configure the project:
+5. Configure the project:
 
 		cd qpn_experiments
 		mkdir build
 		cd build
 		cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-avr-gcc.make -DCMAKE_BUILD_TYPE=MinSizeRel ..
 
-7. Build the project:
+6. Build the project:
 
 		make
 
-8. Upload the simple `blink` example hex file to the MCU:
+7. Upload the simple `blink` example hex file to the MCU:
 
 		make upload_blink
 

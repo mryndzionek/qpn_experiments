@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<model version="3.0.1">
+<model version="3.2.2">
  <framework name="qpn"/>
  <package name="AOs" stereotype="0x02">
   <class name="Capstone" superclass="qpn::QMActive">
@@ -574,7 +574,7 @@ enum AlarmTypes {          /* arranged in ascending order of alarm priority */
 // active objects ................................................*/
 $declare(AOs::Capstone_ctor)
 
-extern struct CapstoneTag AO_Capstone;
+extern struct Capstone AO_Capstone;
 
 #endif /* __CAPSTONE_H__ */</text>
   </file>
@@ -588,7 +588,7 @@ extern struct CapstoneTag AO_Capstone;
 // active objects ................................................*/
 $declare(AOs::AlarmMgr_ctor)
 
-extern struct AlarmMgrTag AO_AlarmMgr;
+extern struct AlarmMgr AO_AlarmMgr;
 
 #endif</text>
   </file>

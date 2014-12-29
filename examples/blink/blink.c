@@ -14,7 +14,7 @@
 * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
 * for more details.
 *****************************************************************************/
-/* @(/2/2) .................................................................*/
+/*${.::blink.c} ............................................................*/
 #include "qpn_port.h"
 #include "bsp.h"
 #include "blink.h"
@@ -24,8 +24,8 @@
 #define BLINK_TOUT BSP_TICKS_PER_SEC
 
 /* Pelican class declaration -----------------------------------------------*/
-/* @(/1/0) .................................................................*/
-typedef struct BlinkTag {
+/*${AOs::Blink} ............................................................*/
+typedef struct Blink {
 /* protected: */
     QActive super;
 } Blink;
@@ -40,34 +40,34 @@ static QState Blink_OFF(Blink * const me);
 Blink AO_Blink;           /* the single instance of the Blink active object */
 
 /* Blink class definition --------------------------------------------------*/
-/* @(/1/2) .................................................................*/
+/*${AOs::Blink_ctor} .......................................................*/
 void Blink_ctor(void) {
     QActive_ctor(&AO_Blink.super, Q_STATE_CAST(&Blink_initial));
 }
-/* @(/1/0) .................................................................*/
-/* @(/1/0/0) ...............................................................*/
-/* @(/1/0/0/0) */
+/*${AOs::Blink} ............................................................*/
+/*${AOs::Blink::SM} ........................................................*/
 static QState Blink_initial(Blink * const me) {
+    /* ${AOs::Blink::SM::initial} */
     return Q_TRAN(&Blink_ON);
 }
-/* @(/1/0/0/1) .............................................................*/
+/*${AOs::Blink::SM::ON} ....................................................*/
 static QState Blink_ON(Blink * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/0/1) */
+        /* ${AOs::Blink::SM::ON} */
         case Q_ENTRY_SIG: {
             BSP_ledOn();
             QActive_arm((QActive *)me, BLINK_TOUT);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/0/1) */
+        /* ${AOs::Blink::SM::ON} */
         case Q_EXIT_SIG: {
             QActive_disarm((QActive *)me);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/0/1/0) */
+        /* ${AOs::Blink::SM::ON::Q_TIMEOUT} */
         case Q_TIMEOUT_SIG: {
             status_ = Q_TRAN(&Blink_OFF);
             break;
@@ -79,24 +79,24 @@ static QState Blink_ON(Blink * const me) {
     }
     return status_;
 }
-/* @(/1/0/0/2) .............................................................*/
+/*${AOs::Blink::SM::OFF} ...................................................*/
 static QState Blink_OFF(Blink * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/0/2) */
+        /* ${AOs::Blink::SM::OFF} */
         case Q_ENTRY_SIG: {
             BSP_ledOff();
             QActive_arm((QActive *)me, BLINK_TOUT);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/0/2) */
+        /* ${AOs::Blink::SM::OFF} */
         case Q_EXIT_SIG: {
             QActive_disarm((QActive *)me);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/0/0/2/0) */
+        /* ${AOs::Blink::SM::OFF::Q_TIMEOUT} */
         case Q_TIMEOUT_SIG: {
             status_ = Q_TRAN(&Blink_ON);
             break;

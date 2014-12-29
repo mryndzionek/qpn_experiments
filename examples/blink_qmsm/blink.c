@@ -14,7 +14,7 @@
 * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
 * for more details.
 *****************************************************************************/
-/* @(/1/3/1) ...............................................................*/
+/*${AOs::.::blink.c} .......................................................*/
 #include "qpn_port.h"
 #include "bsp.h"
 #include "blink.h"
@@ -25,8 +25,8 @@
 #define BLINK_OFF_TOUT BSP_TICKS_PER_SEC
 
 /* Pelican class declaration -----------------------------------------------*/
-/* @(/1/0) .................................................................*/
-typedef struct BlinkTag {
+/*${AOs::Blink} ............................................................*/
+typedef struct Blink {
 /* protected: */
     QMActive super;
 } Blink;
@@ -37,17 +37,21 @@ static QState Blink_ON  (Blink * const me);
 static QState Blink_ON_e(Blink * const me);
 static QState Blink_ON_x(Blink * const me);
 static QMState const Blink_ON_s = {
-    (QMState const *)0,
+    (QMState const *)0, /* superstate (top) */
     Q_STATE_CAST(&Blink_ON),
-    Q_ACTION_CAST(&Blink_ON_x)
+    Q_ACTION_CAST(&Blink_ON_e),
+    Q_ACTION_CAST(&Blink_ON_x),
+    Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 static QState Blink_OFF  (Blink * const me);
 static QState Blink_OFF_e(Blink * const me);
 static QState Blink_OFF_x(Blink * const me);
 static QMState const Blink_OFF_s = {
-    (QMState const *)0,
+    (QMState const *)0, /* superstate (top) */
     Q_STATE_CAST(&Blink_OFF),
-    Q_ACTION_CAST(&Blink_OFF_x)
+    Q_ACTION_CAST(&Blink_OFF_e),
+    Q_ACTION_CAST(&Blink_OFF_x),
+    Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 
 
@@ -55,41 +59,56 @@ static QMState const Blink_OFF_s = {
 Blink AO_Blink;           /* the single instance of the Blink active object */
 
 /* Blink class definition --------------------------------------------------*/
-/* @(/1/2) .................................................................*/
+/*${AOs::Blink_ctor} .......................................................*/
 void Blink_ctor(void) {
     QMActive_ctor(&AO_Blink.super, Q_STATE_CAST(&Blink_initial));
 }
-/* @(/1/0) .................................................................*/
-/* @(/1/0/0) ...............................................................*/
-/* @(/1/0/0/0) */
+/*${AOs::Blink} ............................................................*/
+/*${AOs::Blink::SM} ........................................................*/
 static QState Blink_initial(Blink * const me) {
-    static QActionHandler const act_[] = {
-        Q_ACTION_CAST(&Blink_ON_e),
-        Q_ACTION_CAST(0)
+    static struct {
+        QMState const *target;
+        QActionHandler act[2];
+    } const tatbl_ = { /* transition-action table */
+        &Blink_ON_s, /* target state */
+        {
+            Q_ACTION_CAST(&Blink_ON_e), /* entry */
+            Q_ACTION_CAST(0) /* zero terminator */
+        }
     };
-    return QM_INITIAL(&Blink_ON_s, &act_[0]);
+    /* ${AOs::Blink::SM::initial} */
+    return QM_TRAN_INIT(&tatbl_);
 }
-/* @(/1/0/0/1) .............................................................*/
+/*${AOs::Blink::SM::ON} ....................................................*/
+/* ${AOs::Blink::SM::ON} */
 static QState Blink_ON_e(Blink * const me) {
     BSP_ledOn();
     QActive_arm((QActive *)me, BLINK_ON_TOUT);
     return QM_ENTRY(&Blink_ON_s);
 }
+/* ${AOs::Blink::SM::ON} */
 static QState Blink_ON_x(Blink * const me) {
     QActive_disarm((QActive *)me);
     return QM_EXIT(&Blink_ON_s);
 }
+/* ${AOs::Blink::SM::ON} */
 static QState Blink_ON(Blink * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/0/1/0) */
+        /* ${AOs::Blink::SM::ON::Q_TIMEOUT} */
         case Q_TIMEOUT_SIG: {
-            static QActionHandler const act_[] = {
-                Q_ACTION_CAST(&Blink_ON_x),
-                Q_ACTION_CAST(&Blink_OFF_e),
-                Q_ACTION_CAST(0)
+            static struct {
+                QMState const *target;
+                QActionHandler act[3];
+            } const tatbl_ = { /* transition-action table */
+                &Blink_OFF_s, /* target state */
+                {
+                    Q_ACTION_CAST(&Blink_ON_x), /* exit */
+                    Q_ACTION_CAST(&Blink_OFF_e), /* entry */
+                    Q_ACTION_CAST(0) /* zero terminator */
+                }
             };
-            status_ = QM_TRAN(&Blink_OFF_s, &act_[0]);
+            status_ = QM_TRAN(&tatbl_);
             break;
         }
         default: {
@@ -99,27 +118,36 @@ static QState Blink_ON(Blink * const me) {
     }
     return status_;
 }
-/* @(/1/0/0/2) .............................................................*/
+/*${AOs::Blink::SM::OFF} ...................................................*/
+/* ${AOs::Blink::SM::OFF} */
 static QState Blink_OFF_e(Blink * const me) {
     BSP_ledOff();
     QActive_arm((QActive *)me, BLINK_OFF_TOUT);
     return QM_ENTRY(&Blink_OFF_s);
 }
+/* ${AOs::Blink::SM::OFF} */
 static QState Blink_OFF_x(Blink * const me) {
     QActive_disarm((QActive *)me);
     return QM_EXIT(&Blink_OFF_s);
 }
+/* ${AOs::Blink::SM::OFF} */
 static QState Blink_OFF(Blink * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/0/2/0) */
+        /* ${AOs::Blink::SM::OFF::Q_TIMEOUT} */
         case Q_TIMEOUT_SIG: {
-            static QActionHandler const act_[] = {
-                Q_ACTION_CAST(&Blink_OFF_x),
-                Q_ACTION_CAST(&Blink_ON_e),
-                Q_ACTION_CAST(0)
+            static struct {
+                QMState const *target;
+                QActionHandler act[3];
+            } const tatbl_ = { /* transition-action table */
+                &Blink_ON_s, /* target state */
+                {
+                    Q_ACTION_CAST(&Blink_OFF_x), /* exit */
+                    Q_ACTION_CAST(&Blink_ON_e), /* entry */
+                    Q_ACTION_CAST(0) /* zero terminator */
+                }
             };
-            status_ = QM_TRAN(&Blink_ON_s, &act_[0]);
+            status_ = QM_TRAN(&tatbl_);
             break;
         }
         default: {

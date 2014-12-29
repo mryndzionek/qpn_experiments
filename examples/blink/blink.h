@@ -14,15 +14,15 @@
 * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
 * for more details.
 *****************************************************************************/
-/* @(/2/0) .................................................................*/
+/*${.::blink.h} ............................................................*/
 #ifndef __BLINK_H__
 #define __BLINK_H__
 
 // active objects ................................................*/
-/* @(/1/2) .................................................................*/
+/*${AOs::Blink_ctor} .......................................................*/
 void Blink_ctor(void);
 
 
-extern struct BlinkTag AO_Blink;
+extern struct Blink AO_Blink;
 
 #endif /* __BLINK_H__ */

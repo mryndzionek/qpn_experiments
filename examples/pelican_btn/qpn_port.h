@@ -64,8 +64,10 @@
 #include <avr/pgmspace.h> /* accessing data in the program memory (PROGMEM) */
 
 #include <stdint.h>    /* Exact-width integer types. WG14/N843 C99 Standard */
+#include <stdbool.h>   /* Boolean type.      WG14/N843 C99 Standard */
 #include "qepn.h"         /* QEP-nano platform-independent public interface */
 #include "qfn.h"           /* QF-nano platform-independent public interface */
 #include "qkn.h"           /* QF-nano platform-independent public interface */
+#include "qassert.h"       /* QP-nano assertions header file */
 
 #endif                                                        /* qpn_port_h */

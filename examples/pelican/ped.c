@@ -14,7 +14,7 @@
 * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
 * for more details.
 *****************************************************************************/
-/* @(/2/3) .................................................................*/
+/*${.::ped.c} ..............................................................*/
 #include "qpn_port.h"
 #include "bsp.h"
 #include "pelican.h"
@@ -28,8 +28,8 @@ enum PedTimeouts {                             /* various timeouts in ticks */
 };
 
 /* Peld class declaration --------------------------------------------------*/
-/* @(/1/1) .................................................................*/
-typedef struct PedTag {
+/*${components::Ped} .......................................................*/
+typedef struct Ped {
 /* protected: */
     QActive super;
 
@@ -47,21 +47,21 @@ static QState Ped_wait(Ped * const me);
 Ped AO_Ped;                 /* the single instance of the Ped active object */
 
 /* Pelican class definition ------------------------------------------------*/
-/* @(/1/4) .................................................................*/
+/*${components::Ped_ctor} ..................................................*/
 void Ped_ctor(void) {
     QActive_ctor(&AO_Ped.super, Q_STATE_CAST(&Ped_initial));
 }
-/* @(/1/1) .................................................................*/
-/* @(/1/1/1) ...............................................................*/
-/* @(/1/1/1/0) */
+/*${components::Ped} .......................................................*/
+/*${components::Ped::SM} ...................................................*/
 static QState Ped_initial(Ped * const me) {
+    /* ${components::Ped::SM::initial} */
     return Q_TRAN(&Ped_off);
 }
-/* @(/1/1/1/1) .............................................................*/
+/*${components::Ped::SM::off} ..............................................*/
 static QState Ped_off(Ped * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/1/1/1) */
+        /* ${components::Ped::SM::off} */
         case Q_ENTRY_SIG: {
             BSP_showState("off");
             QActive_arm((QActive *)me, OFF_TOUT);
@@ -69,13 +69,13 @@ static QState Ped_off(Ped * const me) {
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/1/1/1) */
+        /* ${components::Ped::SM::off} */
         case Q_EXIT_SIG: {
             QActive_post((QActive *)&AO_Pelican, ON_SIG, 0);
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/1/1/1/0) */
+        /* ${components::Ped::SM::off::Q_TIMEOUT} */
         case Q_TIMEOUT_SIG: {
             me->retryCtr = N_ATTEMPTS;
             status_ = Q_TRAN(&Ped_wait);
@@ -88,11 +88,11 @@ static QState Ped_off(Ped * const me) {
     }
     return status_;
 }
-/* @(/1/1/1/2) .............................................................*/
+/*${components::Ped::SM::wait} .............................................*/
 static QState Ped_wait(Ped * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/1/1/2) */
+        /* ${components::Ped::SM::wait} */
         case Q_ENTRY_SIG: {
             BSP_showState("wait");
             QActive_post((QActive *)&AO_Pelican, PEDS_WAITING_SIG, 0);
@@ -100,14 +100,14 @@ static QState Ped_wait(Ped * const me) {
             status_ = Q_HANDLED();
             break;
         }
-        /* @(/1/1/1/2/0) */
+        /* ${components::Ped::SM::wait::Q_TIMEOUT} */
         case Q_TIMEOUT_SIG: {
             --me->retryCtr;
-            /* @(/1/1/1/2/0/0) */
+            /* ${components::Ped::SM::wait::Q_TIMEOUT::[me->retryCtr>0]} */
             if (me->retryCtr > 0) {
                 status_ = Q_TRAN(&Ped_wait);
             }
-            /* @(/1/1/1/2/0/1) */
+            /* ${components::Ped::SM::wait::Q_TIMEOUT::[else]} */
             else {
                 status_ = Q_TRAN(&Ped_off);
             }

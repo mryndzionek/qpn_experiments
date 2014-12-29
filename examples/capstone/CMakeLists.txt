@@ -1,6 +1,6 @@
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories("${CMAKE_SOURCE_DIR}/lcd")
-include_directories("${CMAKE_SOURCE_DIR}/qpn_5.2.0/include")
+include_directories("${CMAKE_SOURCE_DIR}/qpn/include")
 add_avr_executable(
     capstone
     main.c
@@ -10,6 +10,6 @@ add_avr_executable(
 	helpers.c
 	scuba.c
     ${CMAKE_SOURCE_DIR}/lcd/lcd.c
-    ${CMAKE_SOURCE_DIR}/qpn_5.2.0/source/qepn.c
-    ${CMAKE_SOURCE_DIR}/qpn_5.2.0/source/qfn.c
+    ${CMAKE_SOURCE_DIR}/qpn/source/qepn.c
+    ${CMAKE_SOURCE_DIR}/qpn/source/qfn.c
 )

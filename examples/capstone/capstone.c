@@ -14,7 +14,7 @@
 * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
 * for more details.
 *****************************************************************************/
-/* @(/2/1) .................................................................*/
+/*${.::capstone.c} .........................................................*/
 #include "qpn_port.h"
 #include "bsp.h"
 #include "capstone.h"
@@ -25,8 +25,8 @@ Q_DEFINE_THIS_FILE
 #endif
 
 /* Pelican class declaration -----------------------------------------------*/
-/* @(/1/0) .................................................................*/
-typedef struct CapstoneTag {
+/*${AOs::Capstone} .........................................................*/
+typedef struct Capstone {
 /* protected: */
     QMActive super;
 
@@ -53,33 +53,41 @@ static QState Capstone_initial(Capstone * const me);
 static QState Capstone_always  (Capstone * const me);
 static QState Capstone_always_i(Capstone * const me);
 static QMState const Capstone_always_s = {
-    (QMState const *)0,
+    (QMState const *)0, /* superstate (top) */
     Q_STATE_CAST(&Capstone_always),
-    Q_ACTION_CAST(0)
+    Q_ACTION_CAST(0), /* no entry action */
+    Q_ACTION_CAST(0), /* no exit action */
+    Q_ACTION_CAST(&Capstone_always_i)
 };
 static QState Capstone_surfaced  (Capstone * const me);
 static QState Capstone_surfaced_e(Capstone * const me);
 static QState Capstone_surfaced_x(Capstone * const me);
 static QMState const Capstone_surfaced_s = {
-    &Capstone_always_s,
+    &Capstone_always_s, /* superstate */
     Q_STATE_CAST(&Capstone_surfaced),
-    Q_ACTION_CAST(&Capstone_surfaced_x)
+    Q_ACTION_CAST(&Capstone_surfaced_e),
+    Q_ACTION_CAST(&Capstone_surfaced_x),
+    Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 static QState Capstone_adding_gas  (Capstone * const me);
 static QState Capstone_adding_gas_e(Capstone * const me);
 static QState Capstone_adding_gas_x(Capstone * const me);
 static QMState const Capstone_adding_gas_s = {
-    &Capstone_surfaced_s,
+    &Capstone_surfaced_s, /* superstate */
     Q_STATE_CAST(&Capstone_adding_gas),
-    Q_ACTION_CAST(&Capstone_adding_gas_x)
+    Q_ACTION_CAST(&Capstone_adding_gas_e),
+    Q_ACTION_CAST(&Capstone_adding_gas_x),
+    Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 static QState Capstone_diving  (Capstone * const me);
 static QState Capstone_diving_e(Capstone * const me);
 static QState Capstone_diving_x(Capstone * const me);
 static QMState const Capstone_diving_s = {
-    &Capstone_always_s,
+    &Capstone_always_s, /* superstate */
     Q_STATE_CAST(&Capstone_diving),
-    Q_ACTION_CAST(&Capstone_diving_x)
+    Q_ACTION_CAST(&Capstone_diving_e),
+    Q_ACTION_CAST(&Capstone_diving_x),
+    Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 
 
@@ -87,12 +95,12 @@ static QMState const Capstone_diving_s = {
 Capstone AO_Capstone;
 
 /* Capstone class definition -----------------------------------------------*/
-/* @(/1/4) .................................................................*/
+/*${AOs::Capstone_ctor} ....................................................*/
 void Capstone_ctor(void) {
     QMActive_ctor(&AO_Capstone.super, Q_STATE_CAST(&Capstone_initial));
 }
-/* @(/1/0) .................................................................*/
-/* @(/1/0/10) ..............................................................*/
+/*${AOs::Capstone} .........................................................*/
+/*${AOs::Capstone::display_depth} ..........................................*/
 static void Capstone_display_depth(Capstone * const me) {
     int32_t displayed_depth;
 
@@ -110,7 +118,7 @@ static void Capstone_display_depth(Capstone * const me) {
     BSP_lcdStr(LCD_DEPTH_X + 4,  LCD_DEPTH_Y, bin2dec3(displayed_depth));
     BSP_lcdStr(LCD_DEPTH_UNITS_X, LCD_DEPTH_Y, me->depth_units);
 }
-/* @(/1/0/11) ..............................................................*/
+/*${AOs::Capstone::display_pressure} .......................................*/
 static void Capstone_display_pressure(Capstone * const me) {
     uint32_t cylinder_pressure_in_bar =
              1 + (me->gas_in_cylinder_in_cl / CYLINDER_VOLUME_IN_CL);
@@ -119,7 +127,7 @@ static void Capstone_display_pressure(Capstone * const me) {
                  / FULL_SCALE_CYLINDER_PRESSURE),
             LCD_PRESSURE_LIMIT, PROGRESS_BAR_LEN);
 }
-/* @(/1/0/12) ..............................................................*/
+/*${AOs::Capstone::display_assent} .........................................*/
 static void Capstone_display_assent(Capstone * const me) {
     if (me->ascent_rate_in_mm_per_sec > 0) {                  /* ascending? */
             BSP_progressBar(LCD_AR_X, LCD_AR_Y,
@@ -132,13 +140,19 @@ static void Capstone_display_assent(Capstone * const me) {
                 PROGRESS_BAR_LEN);
     }
 }
-/* @(/1/0/13) ..............................................................*/
-/* @(/1/0/13/0) */
+/*${AOs::Capstone::SM} .....................................................*/
 static QState Capstone_initial(Capstone * const me) {
-    static QActionHandler const act_[] = {
-        Q_ACTION_CAST(&Capstone_always_i),
-        Q_ACTION_CAST(0)
+    static struct {
+        QMState const *target;
+        QActionHandler act[2];
+    } const tatbl_ = { /* transition-action table */
+        &Capstone_always_s, /* target state */
+        {
+            Q_ACTION_CAST(&Capstone_always_i), /* init.tran. */
+            Q_ACTION_CAST(0) /* zero terminator */
+        }
     };
+    /* ${AOs::Capstone::SM::initial} */
     me->depth_units[0]        = 'm';                              /* meters */
     me->depth_units[1]        = '\0';                     /* zero terminate */
     me->gas_in_cylinder_in_cl = 0;
@@ -146,20 +160,29 @@ static QState Capstone_initial(Capstone * const me) {
     me->dt_tts_sel            = 0;
 
     BSP_lcdStr(LCD_DEPTH_X, LCD_DEPTH_Y, "Dpt");
-    return QM_INITIAL(&Capstone_always_s, &act_[0]);
+    return QM_TRAN_INIT(&tatbl_);
 }
-/* @(/1/0/13/1) ............................................................*/
+/*${AOs::Capstone::SM::always} .............................................*/
+/* ${AOs::Capstone::SM::always::initial} */
 static QState Capstone_always_i(Capstone * const me) {
-    static QActionHandler const act_[] = {
-        Q_ACTION_CAST(&Capstone_surfaced_e),
-        Q_ACTION_CAST(0)
+    static struct {
+        QMState const *target;
+        QActionHandler act[2];
+    } const tatbl_ = { /* transition-action table */
+        &Capstone_surfaced_s, /* target state */
+        {
+            Q_ACTION_CAST(&Capstone_surfaced_e), /* entry */
+            Q_ACTION_CAST(0) /* zero terminator */
+        }
     };
-    return QM_INITIAL(&Capstone_surfaced_s, &act_[0]);
+    /* ${AOs::Capstone::SM::always::initial} */
+    return QM_TRAN_INIT(&tatbl_);
 }
+/* ${AOs::Capstone::SM::always} */
 static QState Capstone_always(Capstone * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/13/1/1) */
+        /* ${AOs::Capstone::SM::always::HEARTBEAT} */
         case HEARTBEAT_SIG: {
             BSP_ADCstart();
             BSP_ledOn(ADC_LED);
@@ -174,7 +197,7 @@ static QState Capstone_always(Capstone * const me) {
             status_ = QM_HANDLED();
             break;
         }
-        /* @(/1/0/13/1/2) */
+        /* ${AOs::Capstone::SM::always::DT_TTS} */
         case DT_TTS_SIG: {
             if (me->dt_tts_sel) {
                 BSP_lcdStr(LCD_TTS_X, LCD_TTS_Y, "TTS");
@@ -190,7 +213,7 @@ static QState Capstone_always(Capstone * const me) {
             status_ = QM_HANDLED();
             break;
         }
-        /* @(/1/0/13/1/3) */
+        /* ${AOs::Capstone::SM::always::BTN2_DOWN} */
         case BTN2_DOWN_SIG: {
             if (me->depth_units[0] == 'm') {
                 me->depth_units[0] = 'f';
@@ -209,7 +232,8 @@ static QState Capstone_always(Capstone * const me) {
     }
     return status_;
 }
-/* @(/1/0/13/1/4) ..........................................................*/
+/*${AOs::Capstone::SM::always::surfaced} ...................................*/
+/* ${AOs::Capstone::SM::always::surfaced} */
 static QState Capstone_surfaced_e(Capstone * const me) {
     BSP_ledOn(SURFACE_LED);
     me->depth_in_mm = 0;
@@ -220,48 +244,63 @@ static QState Capstone_surfaced_e(Capstone * const me) {
     Capstone_display_assent(me);
     return QM_ENTRY(&Capstone_surfaced_s);
 }
+/* ${AOs::Capstone::SM::always::surfaced} */
 static QState Capstone_surfaced_x(Capstone * const me) {
     BSP_ledOff(SURFACE_LED);
+    (void)me; /* avoid compiler warning in case 'me' is not used */
     return QM_EXIT(&Capstone_surfaced_s);
 }
+/* ${AOs::Capstone::SM::always::surfaced} */
 static QState Capstone_surfaced(Capstone * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/13/1/4/0) */
+        /* ${AOs::Capstone::SM::always::surfaced::BTN1_UP} */
         case BTN1_UP_SIG: {
             Capstone_display_pressure(me);
             status_ = QM_HANDLED();
             break;
         }
-        /* @(/1/0/13/1/4/1) */
+        /* ${AOs::Capstone::SM::always::surfaced::BTN1_DOWN} */
         case BTN1_DOWN_SIG: {
-            static QActionHandler const act_[] = {
-                Q_ACTION_CAST(&Capstone_adding_gas_e),
-                Q_ACTION_CAST(0)
+            static struct {
+                QMState const *target;
+                QActionHandler act[2];
+            } const tatbl_ = { /* transition-action table */
+                &Capstone_adding_gas_s, /* target state */
+                {
+                    Q_ACTION_CAST(&Capstone_adding_gas_e), /* entry */
+                    Q_ACTION_CAST(0) /* zero terminator */
+                }
             };
-            status_ = QM_TRAN(&Capstone_adding_gas_s, &act_[0]);
+            status_ = QM_TRAN(&tatbl_);
             break;
         }
-        /* @(/1/0/13/1/4/2) */
+        /* ${AOs::Capstone::SM::always::surfaced::ASCENT_RATE_ADC} */
         case ASCENT_RATE_ADC_SIG: {
             BSP_ledOff(ADC_LED);
 
             me->ascent_rate_in_mm_per_sec =
                 ASCENT_RATE_MM_PER_MIN((uint16_t)Q_PAR(me));
 
-            /* @(/1/0/13/1/4/2/0) */
+            /* ${AOs::Capstone::SM::always::surfaced::ASCENT_RATE_ADC::[me->ascent_rate~} */
             if (me->ascent_rate_in_mm_per_sec >= 0) {
                 me->ascent_rate_in_mm_per_sec = 0;
                 status_ = QM_HANDLED();
             }
-            /* @(/1/0/13/1/4/2/1) */
+            /* ${AOs::Capstone::SM::always::surfaced::ASCENT_RATE_ADC::[else]} */
             else {
-                static QActionHandler const act_[] = {
-                    Q_ACTION_CAST(&Capstone_surfaced_x),
-                    Q_ACTION_CAST(&Capstone_diving_e),
-                    Q_ACTION_CAST(0)
+                static struct {
+                    QMState const *target;
+                    QActionHandler act[3];
+                } const tatbl_ = { /* transition-action table */
+                    &Capstone_diving_s, /* target state */
+                    {
+                        Q_ACTION_CAST(&Capstone_surfaced_x), /* exit */
+                        Q_ACTION_CAST(&Capstone_diving_e), /* entry */
+                        Q_ACTION_CAST(0) /* zero terminator */
+                    }
                 };
-                status_ = QM_TRAN(&Capstone_diving_s, &act_[0]);
+                status_ = QM_TRAN(&tatbl_);
             }
             break;
         }
@@ -272,29 +311,38 @@ static QState Capstone_surfaced(Capstone * const me) {
     }
     return status_;
 }
-/* @(/1/0/13/1/4/3) ........................................................*/
+/*${AOs::Capstone::SM::always::surfaced::adding_gas} .......................*/
+/* ${AOs::Capstone::SM::always::surfaced::adding_gas} */
 static QState Capstone_adding_gas_e(Capstone * const me) {
     QActive_arm((QActive *)me, BSP_TICKS_PER_SEC/10);
     return QM_ENTRY(&Capstone_adding_gas_s);
 }
+/* ${AOs::Capstone::SM::always::surfaced::adding_gas} */
 static QState Capstone_adding_gas_x(Capstone * const me) {
     QActive_disarm((QActive *)me);
     Capstone_display_pressure(me);
     return QM_EXIT(&Capstone_adding_gas_s);
 }
+/* ${AOs::Capstone::SM::always::surfaced::adding_gas} */
 static QState Capstone_adding_gas(Capstone * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/13/1/4/3/0) */
+        /* ${AOs::Capstone::SM::always::surfaced::adding_gas::BTN1_UP} */
         case BTN1_UP_SIG: {
-            static QActionHandler const act_[] = {
-                Q_ACTION_CAST(&Capstone_adding_gas_x),
-                Q_ACTION_CAST(0)
+            static struct {
+                QMState const *target;
+                QActionHandler act[2];
+            } const tatbl_ = { /* transition-action table */
+                &Capstone_surfaced_s, /* target state */
+                {
+                    Q_ACTION_CAST(&Capstone_adding_gas_x), /* exit */
+                    Q_ACTION_CAST(0) /* zero terminator */
+                }
             };
-            status_ = QM_TRAN(&Capstone_surfaced_s, &act_[0]);
+            status_ = QM_TRAN(&tatbl_);
             break;
         }
-        /* @(/1/0/13/1/4/3/1) */
+        /* ${AOs::Capstone::SM::always::surfaced::adding_gas::Q_TIMEOUT} */
         case Q_TIMEOUT_SIG: {
             if (me->gas_in_cylinder_in_cl + GAS_INCREMENT_IN_CL
                             <= (CYLINDER_VOLUME_IN_CL * FULL_SCALE_CYLINDER_PRESSURE))
@@ -316,19 +364,23 @@ static QState Capstone_adding_gas(Capstone * const me) {
     }
     return status_;
 }
-/* @(/1/0/13/1/5) ..........................................................*/
+/*${AOs::Capstone::SM::always::diving} .....................................*/
+/* ${AOs::Capstone::SM::always::diving} */
 static QState Capstone_diving_e(Capstone * const me) {
     me->start_dive_time_in_ticks = BSP_get_ticks();
     return QM_ENTRY(&Capstone_diving_s);
 }
+/* ${AOs::Capstone::SM::always::diving} */
 static QState Capstone_diving_x(Capstone * const me) {
     QActive_post((QActive *)&AO_AlarmMgr, ALARM_SILENCE_SIG, ALL_ALARMS);
+    (void)me; /* avoid compiler warning in case 'me' is not used */
     return QM_EXIT(&Capstone_diving_s);
 }
+/* ${AOs::Capstone::SM::always::diving} */
 static QState Capstone_diving(Capstone * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/0/13/1/5/0) */
+        /* ${AOs::Capstone::SM::always::diving::ASCENT_RATE_ADC} */
         case ASCENT_RATE_ADC_SIG: {
                         BSP_ledOff(ADC_LED);
 
@@ -338,7 +390,7 @@ static QState Capstone_diving(Capstone * const me) {
                         /* integrate the depth based on the ascent rate */
                         me->depth_in_mm -=
                             depth_change_in_mm(me->ascent_rate_in_mm_per_sec);
-            /* @(/1/0/13/1/5/0/0) */
+            /* ${AOs::Capstone::SM::always::diving::ASCENT_RATE_ADC::[me->depth_in_mm~} */
             if (me->depth_in_mm > 0) {
                                 uint32_t consumed_gas_in_cl = gas_rate_in_cl(me->depth_in_mm);
 
@@ -388,14 +440,20 @@ static QState Capstone_diving(Capstone * const me) {
                                 return Q_HANDLED();
                 status_ = QM_HANDLED();
             }
-            /* @(/1/0/13/1/5/0/1) */
+            /* ${AOs::Capstone::SM::always::diving::ASCENT_RATE_ADC::[else]} */
             else {
-                static QActionHandler const act_[] = {
-                    Q_ACTION_CAST(&Capstone_diving_x),
-                    Q_ACTION_CAST(&Capstone_surfaced_e),
-                    Q_ACTION_CAST(0)
+                static struct {
+                    QMState const *target;
+                    QActionHandler act[3];
+                } const tatbl_ = { /* transition-action table */
+                    &Capstone_surfaced_s, /* target state */
+                    {
+                        Q_ACTION_CAST(&Capstone_diving_x), /* exit */
+                        Q_ACTION_CAST(&Capstone_surfaced_e), /* entry */
+                        Q_ACTION_CAST(0) /* zero terminator */
+                    }
                 };
-                status_ = QM_TRAN(&Capstone_surfaced_s, &act_[0]);
+                status_ = QM_TRAN(&tatbl_);
             }
             break;
         }

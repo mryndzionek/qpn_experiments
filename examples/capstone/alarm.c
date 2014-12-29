@@ -14,7 +14,7 @@
 * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
 * for more details.
 *****************************************************************************/
-/* @(/2/4) .................................................................*/
+/*${.::alarm.c} ............................................................*/
 #include "qpn_port.h"
 #include "bsp.h"
 #include "capstone.h"
@@ -37,8 +37,8 @@ int getBitPosition(uint8_t b) {
 }
 
 /* Pelican class declaration -----------------------------------------------*/
-/* @(/1/1) .................................................................*/
-typedef struct AlarmMgrTag {
+/*${AOs::AlarmMgr} .........................................................*/
+typedef struct AlarmMgr {
 /* protected: */
     QMActive super;
 
@@ -53,48 +53,60 @@ static QState AlarmMgr_initial(AlarmMgr * const me);
 static QState AlarmMgr_on  (AlarmMgr * const me);
 static QState AlarmMgr_on_i(AlarmMgr * const me);
 static QMState const AlarmMgr_on_s = {
-    (QMState const *)0,
+    (QMState const *)0, /* superstate (top) */
     Q_STATE_CAST(&AlarmMgr_on),
-    Q_ACTION_CAST(0)
+    Q_ACTION_CAST(0), /* no entry action */
+    Q_ACTION_CAST(0), /* no exit action */
+    Q_ACTION_CAST(&AlarmMgr_on_i)
 };
 static QState AlarmMgr_silent  (AlarmMgr * const me);
 static QState AlarmMgr_silent_e(AlarmMgr * const me);
 static QMState const AlarmMgr_silent_s = {
-    &AlarmMgr_on_s,
+    &AlarmMgr_on_s, /* superstate */
     Q_STATE_CAST(&AlarmMgr_silent),
-    Q_ACTION_CAST(0)
+    Q_ACTION_CAST(&AlarmMgr_silent_e),
+    Q_ACTION_CAST(0), /* no exit action */
+    Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 static QState AlarmMgr_playing  (AlarmMgr * const me);
 static QState AlarmMgr_playing_e(AlarmMgr * const me);
 static QState AlarmMgr_playing_i(AlarmMgr * const me);
 static QMState const AlarmMgr_playing_s = {
-    &AlarmMgr_on_s,
+    &AlarmMgr_on_s, /* superstate */
     Q_STATE_CAST(&AlarmMgr_playing),
-    Q_ACTION_CAST(0)
+    Q_ACTION_CAST(&AlarmMgr_playing_e),
+    Q_ACTION_CAST(0), /* no exit action */
+    Q_ACTION_CAST(&AlarmMgr_playing_i)
 };
 static QState AlarmMgr_beep  (AlarmMgr * const me);
 static QState AlarmMgr_beep_e(AlarmMgr * const me);
 static QState AlarmMgr_beep_x(AlarmMgr * const me);
 static QMState const AlarmMgr_beep_s = {
-    &AlarmMgr_playing_s,
+    &AlarmMgr_playing_s, /* superstate */
     Q_STATE_CAST(&AlarmMgr_beep),
-    Q_ACTION_CAST(&AlarmMgr_beep_x)
+    Q_ACTION_CAST(&AlarmMgr_beep_e),
+    Q_ACTION_CAST(&AlarmMgr_beep_x),
+    Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 static QState AlarmMgr_off  (AlarmMgr * const me);
 static QState AlarmMgr_off_e(AlarmMgr * const me);
 static QState AlarmMgr_off_x(AlarmMgr * const me);
 static QMState const AlarmMgr_off_s = {
-    &AlarmMgr_playing_s,
+    &AlarmMgr_playing_s, /* superstate */
     Q_STATE_CAST(&AlarmMgr_off),
-    Q_ACTION_CAST(&AlarmMgr_off_x)
+    Q_ACTION_CAST(&AlarmMgr_off_e),
+    Q_ACTION_CAST(&AlarmMgr_off_x),
+    Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 static QState AlarmMgr_long_off  (AlarmMgr * const me);
 static QState AlarmMgr_long_off_e(AlarmMgr * const me);
 static QState AlarmMgr_long_off_x(AlarmMgr * const me);
 static QMState const AlarmMgr_long_off_s = {
-    &AlarmMgr_playing_s,
+    &AlarmMgr_playing_s, /* superstate */
     Q_STATE_CAST(&AlarmMgr_long_off),
-    Q_ACTION_CAST(&AlarmMgr_long_off_x)
+    Q_ACTION_CAST(&AlarmMgr_long_off_e),
+    Q_ACTION_CAST(&AlarmMgr_long_off_x),
+    Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 
 
@@ -102,88 +114,127 @@ static QMState const AlarmMgr_long_off_s = {
 AlarmMgr AO_AlarmMgr;
 
 /* Capstone class definition -----------------------------------------------*/
-/* @(/1/5) .................................................................*/
+/*${AOs::AlarmMgr_ctor} ....................................................*/
 void AlarmMgr_ctor(void) {
     QMActive_ctor(&AO_AlarmMgr.super, Q_STATE_CAST(&AlarmMgr_initial));
 }
-/* @(/1/1) .................................................................*/
-/* @(/1/1/3) ...............................................................*/
-/* @(/1/1/3/0) */
+/*${AOs::AlarmMgr} .........................................................*/
+/*${AOs::AlarmMgr::SM} .....................................................*/
 static QState AlarmMgr_initial(AlarmMgr * const me) {
-    static QActionHandler const act_[] = {
-        Q_ACTION_CAST(&AlarmMgr_on_i),
-        Q_ACTION_CAST(0)
+    static struct {
+        QMState const *target;
+        QActionHandler act[2];
+    } const tatbl_ = { /* transition-action table */
+        &AlarmMgr_on_s, /* target state */
+        {
+            Q_ACTION_CAST(&AlarmMgr_on_i), /* init.tran. */
+            Q_ACTION_CAST(0) /* zero terminator */
+        }
     };
-    return QM_INITIAL(&AlarmMgr_on_s, &act_[0]);
+    /* ${AOs::AlarmMgr::SM::initial} */
+    return QM_TRAN_INIT(&tatbl_);
 }
-/* @(/1/1/3/1) .............................................................*/
+/*${AOs::AlarmMgr::SM::on} .................................................*/
+/* ${AOs::AlarmMgr::SM::on::initial} */
 static QState AlarmMgr_on_i(AlarmMgr * const me) {
-    static QActionHandler const act_[] = {
-        Q_ACTION_CAST(&AlarmMgr_silent_e),
-        Q_ACTION_CAST(0)
+    static struct {
+        QMState const *target;
+        QActionHandler act[2];
+    } const tatbl_ = { /* transition-action table */
+        &AlarmMgr_silent_s, /* target state */
+        {
+            Q_ACTION_CAST(&AlarmMgr_silent_e), /* entry */
+            Q_ACTION_CAST(0) /* zero terminator */
+        }
     };
-    return QM_INITIAL(&AlarmMgr_silent_s, &act_[0]);
+    /* ${AOs::AlarmMgr::SM::on::initial} */
+    return QM_TRAN_INIT(&tatbl_);
 }
+/* ${AOs::AlarmMgr::SM::on} */
 static QState AlarmMgr_on(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/1/3/1/1) */
+        /* ${AOs::AlarmMgr::SM::on::ALARM_REQUEST} */
         case ALARM_REQUEST_SIG: {
             uint8_t alarm_type = (uint8_t)Q_PAR(me);
-            /* @(/1/1/3/1/1/0) */
+            /* ${AOs::AlarmMgr::SM::on::ALARM_REQUEST::[me->active_alar~} */
             if (me->active_alarms & _BV(alarm_type)) {
                 status_ = QM_HANDLED();
             }
-            /* @(/1/1/3/1/1/1) */
+            /* ${AOs::AlarmMgr::SM::on::ALARM_REQUEST::[else]} */
             else {
-                static QActionHandler const act_[] = {
-                    Q_ACTION_CAST(&AlarmMgr_playing_e),
-                    Q_ACTION_CAST(&AlarmMgr_playing_i),
-                    Q_ACTION_CAST(0)
+                static struct {
+                    QMState const *target;
+                    QActionHandler act[3];
+                } const tatbl_ = { /* transition-action table */
+                    &AlarmMgr_playing_s, /* target state */
+                    {
+                        Q_ACTION_CAST(&AlarmMgr_playing_e), /* entry */
+                        Q_ACTION_CAST(&AlarmMgr_playing_i), /* init.tran. */
+                        Q_ACTION_CAST(0) /* zero terminator */
+                    }
                 };
                 me->active_alarms |= _BV(alarm_type);
                 me->curr_alarm = getBitPosition(me->active_alarms);
-                status_ = QM_TRAN(&AlarmMgr_playing_s, &act_[0]);
+                status_ = QM_TRAN(&tatbl_);
             }
             break;
         }
-        /* @(/1/1/3/1/2) */
+        /* ${AOs::AlarmMgr::SM::on::ALARM_SILENCE} */
         case ALARM_SILENCE_SIG: {
             uint8_t alarm_type = (uint8_t)Q_PAR(me);
-            /* @(/1/1/3/1/2/0) */
+            /* ${AOs::AlarmMgr::SM::on::ALARM_SILENCE::[alarm_type==ALL~} */
             if (alarm_type == ALL_ALARMS) {
-                static QActionHandler const act_[] = {
-                    Q_ACTION_CAST(&AlarmMgr_silent_e),
-                    Q_ACTION_CAST(0)
+                static struct {
+                    QMState const *target;
+                    QActionHandler act[2];
+                } const tatbl_ = { /* transition-action table */
+                    &AlarmMgr_silent_s, /* target state */
+                    {
+                        Q_ACTION_CAST(&AlarmMgr_silent_e), /* entry */
+                        Q_ACTION_CAST(0) /* zero terminator */
+                    }
                 };
                 me->active_alarms = 0;
-                status_ = QM_TRAN(&AlarmMgr_silent_s, &act_[0]);
+                status_ = QM_TRAN(&tatbl_);
             }
-            /* @(/1/1/3/1/2/1) */
+            /* ${AOs::AlarmMgr::SM::on::ALARM_SILENCE::[else]} */
             else {
                 me->active_alarms &= ~_BV(alarm_type);
-                /* @(/1/1/3/1/2/1/0) */
+                /* ${AOs::AlarmMgr::SM::on::ALARM_SILENCE::[else]::[me->active_alar~} */
                 if (me->active_alarms == 0) {
-                    static QActionHandler const act_[] = {
-                        Q_ACTION_CAST(&AlarmMgr_silent_e),
-                        Q_ACTION_CAST(0)
+                    static struct {
+                        QMState const *target;
+                        QActionHandler act[2];
+                    } const tatbl_ = { /* transition-action table */
+                        &AlarmMgr_silent_s, /* target state */
+                        {
+                            Q_ACTION_CAST(&AlarmMgr_silent_e), /* entry */
+                            Q_ACTION_CAST(0) /* zero terminator */
+                        }
                     };
-                    status_ = QM_TRAN(&AlarmMgr_silent_s, &act_[0]);
+                    status_ = QM_TRAN(&tatbl_);
                 }
-                /* @(/1/1/3/1/2/1/1) */
+                /* ${AOs::AlarmMgr::SM::on::ALARM_SILENCE::[else]::[else]} */
                 else {
                     alarm_type = getBitPosition(me->active_alarms);
-                    /* @(/1/1/3/1/2/1/1/0) */
+                    /* ${AOs::AlarmMgr::SM::on::ALARM_SILENCE::[else]::[else]::[me->curr_alarm!~} */
                     if (me->curr_alarm != alarm_type) {
-                        static QActionHandler const act_[] = {
-                            Q_ACTION_CAST(&AlarmMgr_playing_e),
-                            Q_ACTION_CAST(&AlarmMgr_playing_i),
-                            Q_ACTION_CAST(0)
+                        static struct {
+                            QMState const *target;
+                            QActionHandler act[3];
+                        } const tatbl_ = { /* transition-action table */
+                            &AlarmMgr_playing_s, /* target state */
+                            {
+                                Q_ACTION_CAST(&AlarmMgr_playing_e), /* entry */
+                                Q_ACTION_CAST(&AlarmMgr_playing_i), /* init.tran. */
+                                Q_ACTION_CAST(0) /* zero terminator */
+                            }
                         };
                         me->curr_alarm = alarm_type;
-                        status_ = QM_TRAN(&AlarmMgr_playing_s, &act_[0]);
+                        status_ = QM_TRAN(&tatbl_);
                     }
-                    /* @(/1/1/3/1/2/1/1/1) */
+                    /* ${AOs::AlarmMgr::SM::on::ALARM_SILENCE::[else]::[else]::[else]} */
                     else {
                         status_ = QM_HANDLED();
                     }
@@ -198,13 +249,15 @@ static QState AlarmMgr_on(AlarmMgr * const me) {
     }
     return status_;
 }
-/* @(/1/1/3/1/3) ...........................................................*/
+/*${AOs::AlarmMgr::SM::on::silent} .........................................*/
+/* ${AOs::AlarmMgr::SM::on::silent} */
 static QState AlarmMgr_silent_e(AlarmMgr * const me) {
     BSP_ledOff(BUZZER);
     me->curr_alarm = 0;
     me->active_alarms = 0;
     return QM_ENTRY(&AlarmMgr_silent_s);
 }
+/* ${AOs::AlarmMgr::SM::on::silent} */
 static QState AlarmMgr_silent(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
@@ -213,20 +266,31 @@ static QState AlarmMgr_silent(AlarmMgr * const me) {
             break;
         }
     }
+    (void)me; /* avoid compiler warning in case 'me' is not used */
     return status_;
 }
-/* @(/1/1/3/1/4) ...........................................................*/
+/*${AOs::AlarmMgr::SM::on::playing} ........................................*/
+/* ${AOs::AlarmMgr::SM::on::playing} */
 static QState AlarmMgr_playing_e(AlarmMgr * const me) {
     me->count = 0;
     return QM_ENTRY(&AlarmMgr_playing_s);
 }
+/* ${AOs::AlarmMgr::SM::on::playing::initial} */
 static QState AlarmMgr_playing_i(AlarmMgr * const me) {
-    static QActionHandler const act_[] = {
-        Q_ACTION_CAST(&AlarmMgr_beep_e),
-        Q_ACTION_CAST(0)
+    static struct {
+        QMState const *target;
+        QActionHandler act[2];
+    } const tatbl_ = { /* transition-action table */
+        &AlarmMgr_beep_s, /* target state */
+        {
+            Q_ACTION_CAST(&AlarmMgr_beep_e), /* entry */
+            Q_ACTION_CAST(0) /* zero terminator */
+        }
     };
-    return QM_INITIAL(&AlarmMgr_beep_s, &act_[0]);
+    /* ${AOs::AlarmMgr::SM::on::playing::initial} */
+    return QM_TRAN_INIT(&tatbl_);
 }
+/* ${AOs::AlarmMgr::SM::on::playing} */
 static QState AlarmMgr_playing(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
@@ -235,41 +299,57 @@ static QState AlarmMgr_playing(AlarmMgr * const me) {
             break;
         }
     }
+    (void)me; /* avoid compiler warning in case 'me' is not used */
     return status_;
 }
-/* @(/1/1/3/1/4/1) .........................................................*/
+/*${AOs::AlarmMgr::SM::on::playing::beep} ..................................*/
+/* ${AOs::AlarmMgr::SM::on::playing::beep} */
 static QState AlarmMgr_beep_e(AlarmMgr * const me) {
     BSP_ledOn(BUZZER);
     QActive_arm((QActive *)me, SHORT_PULSE);
     return QM_ENTRY(&AlarmMgr_beep_s);
 }
+/* ${AOs::AlarmMgr::SM::on::playing::beep} */
 static QState AlarmMgr_beep_x(AlarmMgr * const me) {
     QActive_disarm((QActive *)me);
     return QM_EXIT(&AlarmMgr_beep_s);
 }
+/* ${AOs::AlarmMgr::SM::on::playing::beep} */
 static QState AlarmMgr_beep(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/1/3/1/4/1/0) */
+        /* ${AOs::AlarmMgr::SM::on::playing::beep::Q_TIMEOUT} */
         case Q_TIMEOUT_SIG: {
             ++me->count;
-            /* @(/1/1/3/1/4/1/0/0) */
+            /* ${AOs::AlarmMgr::SM::on::playing::beep::Q_TIMEOUT::[me->count==me->~} */
             if (me->count == me->curr_alarm) {
-                static QActionHandler const act_[] = {
-                    Q_ACTION_CAST(&AlarmMgr_beep_x),
-                    Q_ACTION_CAST(&AlarmMgr_long_off_e),
-                    Q_ACTION_CAST(0)
+                static struct {
+                    QMState const *target;
+                    QActionHandler act[3];
+                } const tatbl_ = { /* transition-action table */
+                    &AlarmMgr_long_off_s, /* target state */
+                    {
+                        Q_ACTION_CAST(&AlarmMgr_beep_x), /* exit */
+                        Q_ACTION_CAST(&AlarmMgr_long_off_e), /* entry */
+                        Q_ACTION_CAST(0) /* zero terminator */
+                    }
                 };
-                status_ = QM_TRAN(&AlarmMgr_long_off_s, &act_[0]);
+                status_ = QM_TRAN(&tatbl_);
             }
-            /* @(/1/1/3/1/4/1/0/1) */
+            /* ${AOs::AlarmMgr::SM::on::playing::beep::Q_TIMEOUT::[else]} */
             else {
-                static QActionHandler const act_[] = {
-                    Q_ACTION_CAST(&AlarmMgr_beep_x),
-                    Q_ACTION_CAST(&AlarmMgr_off_e),
-                    Q_ACTION_CAST(0)
+                static struct {
+                    QMState const *target;
+                    QActionHandler act[3];
+                } const tatbl_ = { /* transition-action table */
+                    &AlarmMgr_off_s, /* target state */
+                    {
+                        Q_ACTION_CAST(&AlarmMgr_beep_x), /* exit */
+                        Q_ACTION_CAST(&AlarmMgr_off_e), /* entry */
+                        Q_ACTION_CAST(0) /* zero terminator */
+                    }
                 };
-                status_ = QM_TRAN(&AlarmMgr_off_s, &act_[0]);
+                status_ = QM_TRAN(&tatbl_);
             }
             break;
         }
@@ -280,27 +360,36 @@ static QState AlarmMgr_beep(AlarmMgr * const me) {
     }
     return status_;
 }
-/* @(/1/1/3/1/4/2) .........................................................*/
+/*${AOs::AlarmMgr::SM::on::playing::off} ...................................*/
+/* ${AOs::AlarmMgr::SM::on::playing::off} */
 static QState AlarmMgr_off_e(AlarmMgr * const me) {
     BSP_ledOff(BUZZER);
     QActive_arm((QActive *)me, SHORT_PULSE);
     return QM_ENTRY(&AlarmMgr_off_s);
 }
+/* ${AOs::AlarmMgr::SM::on::playing::off} */
 static QState AlarmMgr_off_x(AlarmMgr * const me) {
     QActive_disarm((QActive *)me);
     return QM_EXIT(&AlarmMgr_off_s);
 }
+/* ${AOs::AlarmMgr::SM::on::playing::off} */
 static QState AlarmMgr_off(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/1/3/1/4/2/0) */
+        /* ${AOs::AlarmMgr::SM::on::playing::off::Q_TIMEOUT} */
         case Q_TIMEOUT_SIG: {
-            static QActionHandler const act_[] = {
-                Q_ACTION_CAST(&AlarmMgr_off_x),
-                Q_ACTION_CAST(&AlarmMgr_beep_e),
-                Q_ACTION_CAST(0)
+            static struct {
+                QMState const *target;
+                QActionHandler act[3];
+            } const tatbl_ = { /* transition-action table */
+                &AlarmMgr_beep_s, /* target state */
+                {
+                    Q_ACTION_CAST(&AlarmMgr_off_x), /* exit */
+                    Q_ACTION_CAST(&AlarmMgr_beep_e), /* entry */
+                    Q_ACTION_CAST(0) /* zero terminator */
+                }
             };
-            status_ = QM_TRAN(&AlarmMgr_beep_s, &act_[0]);
+            status_ = QM_TRAN(&tatbl_);
             break;
         }
         default: {
@@ -310,28 +399,37 @@ static QState AlarmMgr_off(AlarmMgr * const me) {
     }
     return status_;
 }
-/* @(/1/1/3/1/4/3) .........................................................*/
+/*${AOs::AlarmMgr::SM::on::playing::long_off} ..............................*/
+/* ${AOs::AlarmMgr::SM::on::playing::long_off} */
 static QState AlarmMgr_long_off_e(AlarmMgr * const me) {
     BSP_ledOff(BUZZER);
     QActive_arm((QActive *)me, LONG_PULSE);
     return QM_ENTRY(&AlarmMgr_long_off_s);
 }
+/* ${AOs::AlarmMgr::SM::on::playing::long_off} */
 static QState AlarmMgr_long_off_x(AlarmMgr * const me) {
     QActive_disarm((QActive *)me);
     return QM_EXIT(&AlarmMgr_long_off_s);
 }
+/* ${AOs::AlarmMgr::SM::on::playing::long_off} */
 static QState AlarmMgr_long_off(AlarmMgr * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* @(/1/1/3/1/4/3/0) */
+        /* ${AOs::AlarmMgr::SM::on::playing::long_off::Q_TIMEOUT} */
         case Q_TIMEOUT_SIG: {
-            static QActionHandler const act_[] = {
-                Q_ACTION_CAST(&AlarmMgr_long_off_x),
-                Q_ACTION_CAST(&AlarmMgr_beep_e),
-                Q_ACTION_CAST(0)
+            static struct {
+                QMState const *target;
+                QActionHandler act[3];
+            } const tatbl_ = { /* transition-action table */
+                &AlarmMgr_beep_s, /* target state */
+                {
+                    Q_ACTION_CAST(&AlarmMgr_long_off_x), /* exit */
+                    Q_ACTION_CAST(&AlarmMgr_beep_e), /* entry */
+                    Q_ACTION_CAST(0) /* zero terminator */
+                }
             };
             me->count = 0;
-            status_ = QM_TRAN(&AlarmMgr_beep_s, &act_[0]);
+            status_ = QM_TRAN(&tatbl_);
             break;
         }
         default: {

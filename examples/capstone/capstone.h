@@ -14,7 +14,7 @@
 * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
 * for more details.
 *****************************************************************************/
-/* @(/2/2) .................................................................*/
+/*${.::capstone.h} .........................................................*/
 #ifndef __CAPSTONE_H__
 #define __CAPSTONE_H__
 
@@ -89,10 +89,10 @@ enum AlarmTypes {          /* arranged in ascending order of alarm priority */
 };
 
 // active objects ................................................*/
-/* @(/1/4) .................................................................*/
+/*${AOs::Capstone_ctor} ....................................................*/
 void Capstone_ctor(void);
 
 
-extern struct CapstoneTag AO_Capstone;
+extern struct Capstone AO_Capstone;
 
 #endif /* __CAPSTONE_H__ */

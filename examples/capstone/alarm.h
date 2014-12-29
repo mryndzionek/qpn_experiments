@@ -14,7 +14,7 @@
 * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
 * for more details.
 *****************************************************************************/
-/* @(/2/3) .................................................................*/
+/*${.::alarm.h} ............................................................*/
 #ifndef __ALARM_H__
 #define __ALARM_H__
 
@@ -22,10 +22,10 @@
 #define LONG_PULSE     BSP_TICKS_PER_SEC
 
 // active objects ................................................*/
-/* @(/1/5) .................................................................*/
+/*${AOs::AlarmMgr_ctor} ....................................................*/
 void AlarmMgr_ctor(void);
 
 
-extern struct AlarmMgrTag AO_AlarmMgr;
+extern struct AlarmMgr AO_AlarmMgr;
 
 #endif
