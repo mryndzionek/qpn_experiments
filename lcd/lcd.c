@@ -470,7 +470,7 @@ void lcd_putchar(char chr) {
  *
  * @param str The string to be displayed (zero-terminated array of char)
  */
-void lcd_putstr(char *str) {
+void lcd_putstr(const char *str) {
 	while (*str!=0) {
 		lcd_putchar(*str);
 		str++;

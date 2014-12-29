@@ -277,7 +277,7 @@ void lcd_set_position(uint8_t position);
 void lcd_set_cursor(uint8_t mode);
 void lcd_linewrap(void);
 void lcd_putchar(char chr);
-void lcd_putstr(char *str);
+void lcd_putstr(const char *str);
 void lcd_putstr_P(PGM_P str);
 void lcd_print(char *str);
 void lcd_customchar(uint8_t number, uint8_t *data);
