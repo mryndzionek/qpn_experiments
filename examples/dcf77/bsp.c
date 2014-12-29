@@ -472,7 +472,7 @@ void BSP_dispDecoding(uint16_t data) {
     lcd_putstr("sec:");
     lcd_putstr(bin2dec3(data & 0xFF));
     lcd_putstr(" data:");
-    lcd_putstr((decoded_data > 1) ? bin2dec3(decoded_data - 2) : "  E");
+    lcd_putstr((decoded_data > 1) ? bin2dec3(decoded_data - 2) : (decoded_data == 1) ? "  E" : "  S");
 }
 
 /*..........................................................................*/
