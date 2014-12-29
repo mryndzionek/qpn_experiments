@@ -44,7 +44,7 @@
 #define QF_TIMEEVT_CTR_SIZE     2
 
 /* maximum # active objects--must match EXACTLY the QF_active[] definition  */
-#define QF_MAX_ACTIVE           1
+#define QF_MAX_ACTIVE           2
 
 #define QF_INT_DISABLE()        cli()
 #define QF_INT_ENABLE()         sei()

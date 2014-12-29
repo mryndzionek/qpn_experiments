@@ -6,6 +6,7 @@
 
 #include "lcd.h"
 #include "phase_detector.h"
+#include "decoder.h"
 
 #define LED_OFF(num_)       (PORTD &= ~(1 << (num_)))
 #define LED_ON(num_)        (PORTD |= (1 << (num_)))
@@ -171,6 +172,19 @@ static char const *bin2dec3(uint32_t val) {
     return str;
 }
 
+static char const *get_cursor()
+{
+    static char curs[] = ".  ";
+    char tmp;
+
+    tmp = curs[2];
+    curs[2] = curs[1];
+    curs[1] = curs[0];
+    curs[0] = tmp;
+
+    return curs;
+}
+
 static uint8_t get_second() {
     if (sbins.max - sbins.noise_max >= LOCK_TRESHOLD) {
         // at least one sync mark and a 0 and a 1 seen
@@ -193,7 +207,7 @@ static uint8_t get_second() {
     }
 }
 
-static void compute_max_index() {
+static inline void compute_max_index() {
 
     uint8_t index;
     sbins.noise_max = 0;
@@ -298,9 +312,6 @@ static void sync_mark_binning(const uint8_t tick_data) {
         // the sync mark was detected
 
         compute_max_index();
-        lcd_set_line(1);
-        lcd_putstr("sync:");
-        lcd_putstr(bin2dec3(sbins.max_index));
     }
 }
 
@@ -327,19 +338,10 @@ static void decode_220ms(const uint8_t input, const uint8_t bins_to_go) {
             //               1 --> undefined,
             //               0 --> sync_mark
 
-            lcd_clear();
-            lcd_set_line(0);
-            lcd_putstr("data:");
-            lcd_putstr(bin2dec3(decoded_data));
-            lcd_putstr(" tck:");
-            lcd_putstr(bin2dec3(sbins.tick));
-
             sync_mark_binning(decoded_data);
 
-            if(sbins.tick == sbins.max_index)
-                LED_ON(4);
-            else
-                LED_OFF(4);
+            QActive_post((QActive *)&AO_Decoder, DCF_DATA_SIG, (uint16_t)get_second() | (decoded_data << 8));
+
         }
     }
 }
@@ -429,30 +431,52 @@ bool BSP_convolution(void) {
         pbins.noise_max += (uint32_t)pbins.data[wrap(noise_index + bin)];
     }
 
+    QActive_post((QActive *)&AO_Decoder, PHASE_UPDATE_SIG, 0);
+
     if (pbins.max - pbins.noise_max < THRESHOLD || wrap(BIN_COUNT + pbins.tick - pbins.max_index) == 53)
         return false;
     else
         return true;
 
-
 }
 
 /*..........................................................................*/
-void BSP_MsgNotLocked(void) {
-
+void BSP_dispLocking(void) {
     lcd_set_line(0);
-    lcd_putstr("Detecting phase");
-}
-
-/*..........................................................................*/
-void BSP_MsgLocked(void) {
-
-    lcd_clear();
-    lcd_set_line(0);
-    lcd_putstr("Phase: ");
+    lcd_putstr("Locking");
+    lcd_putstr(get_cursor());
+    lcd_set_line(1);
+    lcd_putstr("phase: ");
     lcd_putstr(bin2dec3(pbins.max_index));
+}
+
+/*..........................................................................*/
+void BSP_dispSyncing(uint16_t data) {
+
+    lcd_set_line(0);
+    lcd_putstr("Syncing");
+    lcd_putstr(get_cursor());
+
+}
+
+/*..........................................................................*/
+void BSP_dispDecoding(uint16_t data) {
+
+    lcd_set_line(0);
+    lcd_putstr("Decoding");
+    lcd_putstr(get_cursor());
+
+    uint8_t decoded_data = (data >> 8) & 0xFF;
 
     lcd_set_line(1);
-    lcd_putstr("Syncing...");
-    lcd_putstr(bin2dec3(pbins.max));
+    lcd_putstr("sec:");
+    lcd_putstr(bin2dec3(data & 0xFF));
+    lcd_putstr(" data:");
+    lcd_putstr((decoded_data > 1) ? bin2dec3(decoded_data - 2) : "  E");
 }
+
+/*..........................................................................*/
+void BSP_dispClear(void) {
+    lcd_clear();
+}
+

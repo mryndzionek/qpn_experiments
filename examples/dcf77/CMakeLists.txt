@@ -5,6 +5,7 @@ add_avr_executable(
     dcf77
     main.c
     phase_detector.c
+    decoder.c
     bsp.c
     ${CMAKE_SOURCE_DIR}/lcd/lcd.c
     ${CMAKE_SOURCE_DIR}/qpn/source/qepn.c

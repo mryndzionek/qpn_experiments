@@ -22,7 +22,7 @@
 /*Q_DEFINE_THIS_FILE*/
 
 #define PAUSE_MS             (BSP_TICKS_PER_SEC / 10)
-#define BINNING_PERIOD_MS    (BSP_TICKS_PER_SEC * 3)
+#define BINNING_PERIOD_MS    (BSP_TICKS_PER_SEC / 10)
 #define LCD_REFRESH_RATE     (BSP_TICKS_PER_SEC * 5)
 
 /* PhaseDetector class declaration -----------------------------------------------*/
@@ -45,11 +45,10 @@ static QMState const PhaseDetector_NOT_LOCKED_s = {
     Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 static QState PhaseDetector_LOCKED  (PhaseDetector * const me);
-static QState PhaseDetector_LOCKED_e(PhaseDetector * const me);
 static QMState const PhaseDetector_LOCKED_s = {
     (QMState const *)0, /* superstate (top) */
     Q_STATE_CAST(&PhaseDetector_LOCKED),
-    Q_ACTION_CAST(&PhaseDetector_LOCKED_e),
+    Q_ACTION_CAST(0), /* no entry action */
     Q_ACTION_CAST(0), /* no exit action */
     Q_ACTION_CAST(0)  /* no intitial tran. */
 };
@@ -82,7 +81,6 @@ static QState PhaseDetector_initial(PhaseDetector * const me) {
 /*${AOs::PhaseDetector::SM::NOT_LOCKED} ....................................*/
 /* ${AOs::PhaseDetector::SM::NOT_LOCKED} */
 static QState PhaseDetector_NOT_LOCKED_e(PhaseDetector * const me) {
-    BSP_MsgNotLocked();
     QActive_arm((QActive *)me, BINNING_PERIOD_MS);
     return QM_ENTRY(&PhaseDetector_NOT_LOCKED_s);
 }
@@ -107,12 +105,11 @@ static QState PhaseDetector_NOT_LOCKED(PhaseDetector * const me) {
             if (BSP_convolution()) {
                 static struct {
                     QMState const *target;
-                    QActionHandler act[3];
+                    QActionHandler act[2];
                 } const tatbl_ = { /* transition-action table */
                     &PhaseDetector_LOCKED_s, /* target state */
                     {
                         Q_ACTION_CAST(&PhaseDetector_NOT_LOCKED_x), /* exit */
-                        Q_ACTION_CAST(&PhaseDetector_LOCKED_e), /* entry */
                         Q_ACTION_CAST(0) /* zero terminator */
                     }
                 };
@@ -133,12 +130,6 @@ static QState PhaseDetector_NOT_LOCKED(PhaseDetector * const me) {
     return status_;
 }
 /*${AOs::PhaseDetector::SM::LOCKED} ........................................*/
-/* ${AOs::PhaseDetector::SM::LOCKED} */
-static QState PhaseDetector_LOCKED_e(PhaseDetector * const me) {
-    BSP_MsgLocked();
-    (void)me; /* avoid compiler warning in case 'me' is not used */
-    return QM_ENTRY(&PhaseDetector_LOCKED_s);
-}
 /* ${AOs::PhaseDetector::SM::LOCKED} */
 static QState PhaseDetector_LOCKED(PhaseDetector * const me) {
     QState status_;

@@ -10,8 +10,7 @@
      </initial_glyph>
     </initial>
     <state name="NOT_LOCKED">
-     <entry>BSP_MsgNotLocked();
-QActive_arm((QActive *)me, BINNING_PERIOD_MS);</entry>
+     <entry>QActive_arm((QActive *)me, BINNING_PERIOD_MS);</entry>
      <exit>QActive_disarm((QActive *)me);</exit>
      <tran trig="SAMPLE_READY">
       <action>BSP_binning(Q_PAR(me));</action>
@@ -43,24 +42,105 @@ QActive_arm((QActive *)me, BINNING_PERIOD_MS);</entry>
      </state_glyph>
     </state>
     <state name="LOCKED">
-     <entry>BSP_MsgLocked();</entry>
      <tran trig="SAMPLE_READY">
       <action>BSP_decoding(Q_PAR(me));</action>
       <tran_glyph conn="94,24,1,-1,-23">
        <action box="-14,-2,13,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="56,7,38,23">
-      <entry box="1,2,6,2"/>
-     </state_glyph>
+     <state_glyph node="56,7,38,23"/>
     </state>
     <state_diagram size="101,53"/>
    </statechart>
   </class>
+  <class name="Decoder" superclass="qpn::QMActive">
+   <statechart>
+    <initial target="../1">
+     <initial_glyph conn="6,6,5,0,12,4">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="LOCKING">
+     <entry>BSP_dispClear();</entry>
+     <tran trig="PHASE_UPDATE">
+      <action>BSP_dispLocking();</action>
+      <tran_glyph conn="6,18,3,-1,17">
+       <action box="0,-2,13,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="DCF_DATA" target="../../2">
+      <action>BSP_dispClear();
+BSP_dispSyncing(Q_PAR(me));</action>
+      <tran_glyph conn="36,16,1,3,20">
+       <action box="0,-2,14,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="6,10,30,19">
+      <entry box="1,2,6,2"/>
+     </state_glyph>
+    </state>
+    <state name="SYNCING">
+     <exit>BSP_dispClear();</exit>
+     <tran trig="DCF_DATA">
+      <action>BSP_dispSyncing(Q_PAR(me));</action>
+      <choice target="../../../3">
+       <guard>(Q_PAR(me) &amp; 0xFF) != 0xFF</guard>
+       <choice_glyph conn="72,20,4,0,18,-19,3">
+        <action box="1,2,10,2"/>
+       </choice_glyph>
+      </choice>
+      <choice>
+       <guard>else</guard>
+       <choice_glyph conn="72,20,5,-1,7">
+        <action box="1,-2,10,2"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="56,20,3,-1,16">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="56,10,33,19">
+      <exit box="1,2,6,2"/>
+     </state_glyph>
+    </state>
+    <state name="DECODING">
+     <entry>BSP_dispClear();</entry>
+     <tran trig="DCF_DATA">
+      <action>BSP_dispDecoding(Q_PAR(me));</action>
+      <choice>
+       <guard>else</guard>
+       <choice_glyph conn="49,49,5,-1,-9">
+        <action box="-8,0,10,2"/>
+       </choice_glyph>
+      </choice>
+      <choice target="../../../2">
+       <guard>(Q_PAR(me) &amp; 0xFF) == 0xFF</guard>
+       <action>BSP_dispClear();
+BSP_dispSyncing(Q_PAR(me));</action>
+       <choice_glyph conn="49,49,4,3,-25,7">
+        <action box="-10,-5,10,2"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="59,54,1,-1,-10,-5">
+       <action box="-9,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="29,41,30,18">
+      <entry box="1,2,6,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="106,63"/>
+   </statechart>
+  </class>
   <attribute name="AO_PhaseDetector" type="QMActive *const" visibility="0x00" properties="0x00"/>
+  <attribute name="AO_Decoder" type="QMActive *const" visibility="0x00" properties="0x00"/>
   <operation name="PhaseDetector_ctor" type="void" visibility="0x00" properties="0x00">
    <documentation>constructor</documentation>
    <code>QMActive_ctor(&amp;AO_PhaseDetector.super, Q_STATE_CAST(&amp;PhaseDetector_initial));</code>
+  </operation>
+  <operation name="Decoder_ctor" type="void" visibility="0x00" properties="0x00">
+   <documentation>constructor</documentation>
+   <code>QMActive_ctor(&amp;AO_Decoder.super, Q_STATE_CAST(&amp;Decoder_initial));</code>
   </operation>
   <directory name=".">
    <file name="phase_detector.h">
@@ -69,8 +149,8 @@ QActive_arm((QActive *)me, BINNING_PERIOD_MS);</entry>
 
 enum PhaseDetectorSignals {
     SAMPLE_READY_SIG = Q_USER_SIG,
-    LOCKED_SIG,
-    NO_LOCK_SIG
+    PHASE_UPDATE_SIG,
+    DCF_DATA_SIG
 };
 
 // active objects ................................................*/
@@ -88,7 +168,7 @@ extern struct PhaseDetector AO_PhaseDetector;
 /*Q_DEFINE_THIS_FILE*/
 
 #define PAUSE_MS             (BSP_TICKS_PER_SEC / 10)
-#define BINNING_PERIOD_MS    (BSP_TICKS_PER_SEC * 3)
+#define BINNING_PERIOD_MS    (BSP_TICKS_PER_SEC / 10)
 #define LCD_REFRESH_RATE     (BSP_TICKS_PER_SEC * 5)
 
 /* PhaseDetector class declaration -----------------------------------------------*/
@@ -105,6 +185,7 @@ $define(AOs::PhaseDetector)</text>
     <text>#include &quot;qpn_port.h&quot;           /* QP-nano port */
 #include &quot;bsp.h&quot;                /* Board Support Package (BSP) */
 #include &quot;phase_detector.h&quot;
+#include &quot;decoder.h&quot;
 
 /*..........................................................................*/
 static QEvt l_dcf77Queue[2];
@@ -112,7 +193,8 @@ static QEvt l_dcf77Queue[2];
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
     { (QActive *)0,           (QEvt *)0,      0                         },
-    { (QActive *)&amp;AO_PhaseDetector, l_dcf77Queue, Q_DIM(l_dcf77Queue)   }
+    { (QActive *)&amp;AO_Decoder, l_dcf77Queue, Q_DIM(l_dcf77Queue)         },
+    { (QActive *)&amp;AO_PhaseDetector, l_dcf77Queue, Q_DIM(l_dcf77Queue)   },
 };
 
 /* make sure that the QF_active[] array matches QF_MAX_ACTIVE in qpn_port.h */
@@ -122,10 +204,40 @@ Q_ASSERT_COMPILE(QF_MAX_ACTIVE == Q_DIM(QF_active) - 1);
 int main(void)
 {
     PhaseDetector_ctor();    /* instantiate the PhaseDetector AO */
+    Decoder_ctor();
     BSP_init();              /* initialize the board */
 
     return QF_run();         /* transfer control to QF-nano */
 }</text>
+   </file>
+   <file name="decoder.h">
+    <text>#ifndef __DECODER_H__
+#define __DECODER_H__
+
+// active objects ................................................*/
+$declare(AOs::Decoder_ctor)
+
+extern struct Decoder AO_Decoder;
+
+#endif /* __DECODER_H__ */</text>
+   </file>
+   <file name="decoder.c">
+    <text>#include &quot;qpn_port.h&quot;
+#include &quot;bsp.h&quot;
+#include &quot;decoder.h&quot;
+#include &quot;phase_detector.h&quot;
+
+/*Q_DEFINE_THIS_FILE*/
+
+/* PhaseDetector class declaration -----------------------------------------------*/
+$declare(AOs::Decoder)
+
+/* Global objects ----------------------------------------------------------*/
+Decoder AO_Decoder;
+
+/* Blink class definition --------------------------------------------------*/
+$define(AOs::Decoder_ctor)
+$define(AOs::Decoder)</text>
    </file>
   </directory>
  </package>
