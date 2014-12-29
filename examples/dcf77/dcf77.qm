@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="3.2.2">
+ <framework name="qpn"/>
+ <package name="AOs" stereotype="0x02">
+  <class name="PhaseDetector" superclass="qpn::QMActive">
+   <statechart>
+    <initial target="../1">
+     <initial_glyph conn="3,3,5,0,16,3">
+      <action box="0,-2,6,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="BINNING">
+     <entry>QActive_arm((QActive *)me, BINNING_PERIOD_MS);</entry>
+     <exit>QActive_disarm((QActive *)me);</exit>
+     <tran trig="SAMPLE_READY">
+      <action>BSP_binning(Q_PAR(me));</action>
+      <tran_glyph conn="7,15,3,-1,21">
+       <action box="0,-2,13,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="Q_TIMEOUT">
+      <action>BSP_convolution();
+QActive_arm((QActive *)me, BINNING_PERIOD_MS);</action>
+      <tran_glyph conn="7,20,3,-1,23">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="7,6,33,24">
+      <entry box="1,2,6,2"/>
+      <exit box="1,4,6,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="101,53"/>
+   </statechart>
+  </class>
+  <attribute name="AO_PhaseDetector" type="QMActive *const" visibility="0x00" properties="0x00"/>
+  <operation name="PhaseDetector_ctor" type="void" visibility="0x00" properties="0x00">
+   <documentation>constructor</documentation>
+   <code>QMActive_ctor(&amp;AO_PhaseDetector.super, Q_STATE_CAST(&amp;PhaseDetector_initial));</code>
+  </operation>
+  <directory name=".">
+   <file name="phase_detector.h">
+    <text>#ifndef __PHASE_DETECTOR_H__
+#define __PHASE_DETECTOR_H__
+
+enum PhaseDetectorSignals {
+    SAMPLE_READY_SIG = Q_USER_SIG,
+};
+
+// active objects ................................................*/
+$declare(AOs::PhaseDetector_ctor)
+
+extern struct PhaseDetector AO_PhaseDetector;
+
+#endif /* __PHASE_DETECTOR_H__ */</text>
+   </file>
+   <file name="phase_detector.c">
+    <text>#include &quot;qpn_port.h&quot;
+#include &quot;bsp.h&quot;
+#include &quot;phase_detector.h&quot;
+
+/*Q_DEFINE_THIS_FILE*/
+
+#define PAUSE_MS             (BSP_TICKS_PER_SEC / 10)
+#define BINNING_PERIOD_MS    (BSP_TICKS_PER_SEC * 5)
+
+/* PhaseDetector class declaration -----------------------------------------------*/
+$declare(AOs::PhaseDetector)
+
+/* Global objects ----------------------------------------------------------*/
+PhaseDetector AO_PhaseDetector;
+
+/* Blink class definition --------------------------------------------------*/
+$define(AOs::PhaseDetector_ctor)
+$define(AOs::PhaseDetector)</text>
+   </file>
+   <file name="main.c">
+    <text>#include &quot;qpn_port.h&quot;           /* QP-nano port */
+#include &quot;bsp.h&quot;                /* Board Support Package (BSP) */
+#include &quot;phase_detector.h&quot;     /* application interface */
+/*..........................................................................*/
+static QEvt l_dcf77Queue[2];
+
+/* QF_active[] array defines all active object control blocks --------------*/
+QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
+    { (QActive *)0,           (QEvt *)0,      0                         },
+    { (QActive *)&amp;AO_PhaseDetector, l_dcf77Queue, Q_DIM(l_dcf77Queue)   }
+};
+
+/* make sure that the QF_active[] array matches QF_MAX_ACTIVE in qpn_port.h */
+Q_ASSERT_COMPILE(QF_MAX_ACTIVE == Q_DIM(QF_active) - 1);
+
+/*..........................................................................*/
+int main(void)
+{
+    PhaseDetector_ctor();    /* instantiate the PhaseDetector AO */
+    BSP_init();              /* initialize the board */
+
+    return QF_run();         /* transfer control to QF-nano */
+}</text>
+   </file>
+  </directory>
+ </package>
+</model>

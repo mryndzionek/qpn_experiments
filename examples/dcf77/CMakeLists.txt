@@ -1,0 +1,13 @@
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories("${CMAKE_SOURCE_DIR}/lcd")
+include_directories("${CMAKE_SOURCE_DIR}/qpn/include")
+add_avr_executable(
+    dcf77
+    main.c
+    phase_detector.c
+    bsp.c
+    ${CMAKE_SOURCE_DIR}/lcd/lcd.c
+    ${CMAKE_SOURCE_DIR}/qpn/source/qepn.c
+    ${CMAKE_SOURCE_DIR}/qpn/source/qfn.c
+    ${CMAKE_SOURCE_DIR}/qpn/source/qkn.c
+)
