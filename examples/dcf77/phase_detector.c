@@ -22,7 +22,8 @@
 /*Q_DEFINE_THIS_FILE*/
 
 #define PAUSE_MS             (BSP_TICKS_PER_SEC / 10)
-#define BINNING_PERIOD_MS    (BSP_TICKS_PER_SEC * 5)
+#define BINNING_PERIOD_MS    (BSP_TICKS_PER_SEC * 3)
+#define LCD_REFRESH_RATE     (BSP_TICKS_PER_SEC * 5)
 
 /* PhaseDetector class declaration -----------------------------------------------*/
 /*${AOs::PhaseDetector} ....................................................*/
@@ -33,14 +34,23 @@ typedef struct PhaseDetector {
 
 /* protected: */
 static QState PhaseDetector_initial(PhaseDetector * const me);
-static QState PhaseDetector_BINNING  (PhaseDetector * const me);
-static QState PhaseDetector_BINNING_e(PhaseDetector * const me);
-static QState PhaseDetector_BINNING_x(PhaseDetector * const me);
-static QMState const PhaseDetector_BINNING_s = {
+static QState PhaseDetector_NOT_LOCKED  (PhaseDetector * const me);
+static QState PhaseDetector_NOT_LOCKED_e(PhaseDetector * const me);
+static QState PhaseDetector_NOT_LOCKED_x(PhaseDetector * const me);
+static QMState const PhaseDetector_NOT_LOCKED_s = {
     (QMState const *)0, /* superstate (top) */
-    Q_STATE_CAST(&PhaseDetector_BINNING),
-    Q_ACTION_CAST(&PhaseDetector_BINNING_e),
-    Q_ACTION_CAST(&PhaseDetector_BINNING_x),
+    Q_STATE_CAST(&PhaseDetector_NOT_LOCKED),
+    Q_ACTION_CAST(&PhaseDetector_NOT_LOCKED_e),
+    Q_ACTION_CAST(&PhaseDetector_NOT_LOCKED_x),
+    Q_ACTION_CAST(0)  /* no intitial tran. */
+};
+static QState PhaseDetector_LOCKED  (PhaseDetector * const me);
+static QState PhaseDetector_LOCKED_e(PhaseDetector * const me);
+static QMState const PhaseDetector_LOCKED_s = {
+    (QMState const *)0, /* superstate (top) */
+    Q_STATE_CAST(&PhaseDetector_LOCKED),
+    Q_ACTION_CAST(&PhaseDetector_LOCKED_e),
+    Q_ACTION_CAST(0), /* no exit action */
     Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 
@@ -60,40 +70,82 @@ static QState PhaseDetector_initial(PhaseDetector * const me) {
         QMState const *target;
         QActionHandler act[2];
     } const tatbl_ = { /* transition-action table */
-        &PhaseDetector_BINNING_s, /* target state */
+        &PhaseDetector_NOT_LOCKED_s, /* target state */
         {
-            Q_ACTION_CAST(&PhaseDetector_BINNING_e), /* entry */
+            Q_ACTION_CAST(&PhaseDetector_NOT_LOCKED_e), /* entry */
             Q_ACTION_CAST(0) /* zero terminator */
         }
     };
     /* ${AOs::PhaseDetector::SM::initial} */
     return QM_TRAN_INIT(&tatbl_);
 }
-/*${AOs::PhaseDetector::SM::BINNING} .......................................*/
-/* ${AOs::PhaseDetector::SM::BINNING} */
-static QState PhaseDetector_BINNING_e(PhaseDetector * const me) {
+/*${AOs::PhaseDetector::SM::NOT_LOCKED} ....................................*/
+/* ${AOs::PhaseDetector::SM::NOT_LOCKED} */
+static QState PhaseDetector_NOT_LOCKED_e(PhaseDetector * const me) {
+    BSP_MsgNotLocked();
     QActive_arm((QActive *)me, BINNING_PERIOD_MS);
-    return QM_ENTRY(&PhaseDetector_BINNING_s);
+    return QM_ENTRY(&PhaseDetector_NOT_LOCKED_s);
 }
-/* ${AOs::PhaseDetector::SM::BINNING} */
-static QState PhaseDetector_BINNING_x(PhaseDetector * const me) {
+/* ${AOs::PhaseDetector::SM::NOT_LOCKED} */
+static QState PhaseDetector_NOT_LOCKED_x(PhaseDetector * const me) {
     QActive_disarm((QActive *)me);
-    return QM_EXIT(&PhaseDetector_BINNING_s);
+    return QM_EXIT(&PhaseDetector_NOT_LOCKED_s);
 }
-/* ${AOs::PhaseDetector::SM::BINNING} */
-static QState PhaseDetector_BINNING(PhaseDetector * const me) {
+/* ${AOs::PhaseDetector::SM::NOT_LOCKED} */
+static QState PhaseDetector_NOT_LOCKED(PhaseDetector * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* ${AOs::PhaseDetector::SM::BINNING::SAMPLE_READY} */
+        /* ${AOs::PhaseDetector::SM::NOT_LOCKED::SAMPLE_READY} */
         case SAMPLE_READY_SIG: {
             BSP_binning(Q_PAR(me));
             status_ = QM_HANDLED();
             break;
         }
-        /* ${AOs::PhaseDetector::SM::BINNING::Q_TIMEOUT} */
+        /* ${AOs::PhaseDetector::SM::NOT_LOCKED::Q_TIMEOUT} */
         case Q_TIMEOUT_SIG: {
-            BSP_convolution();
-            QActive_arm((QActive *)me, BINNING_PERIOD_MS);
+            /* ${AOs::PhaseDetector::SM::NOT_LOCKED::Q_TIMEOUT::[BSP_convolution~} */
+            if (BSP_convolution()) {
+                static struct {
+                    QMState const *target;
+                    QActionHandler act[3];
+                } const tatbl_ = { /* transition-action table */
+                    &PhaseDetector_LOCKED_s, /* target state */
+                    {
+                        Q_ACTION_CAST(&PhaseDetector_NOT_LOCKED_x), /* exit */
+                        Q_ACTION_CAST(&PhaseDetector_LOCKED_e), /* entry */
+                        Q_ACTION_CAST(0) /* zero terminator */
+                    }
+                };
+                status_ = QM_TRAN(&tatbl_);
+            }
+            /* ${AOs::PhaseDetector::SM::NOT_LOCKED::Q_TIMEOUT::[else]} */
+            else {
+                QActive_arm((QActive *)me, BINNING_PERIOD_MS);
+                status_ = QM_HANDLED();
+            }
+            break;
+        }
+        default: {
+            status_ = QM_SUPER();
+            break;
+        }
+    }
+    return status_;
+}
+/*${AOs::PhaseDetector::SM::LOCKED} ........................................*/
+/* ${AOs::PhaseDetector::SM::LOCKED} */
+static QState PhaseDetector_LOCKED_e(PhaseDetector * const me) {
+    BSP_MsgLocked();
+    (void)me; /* avoid compiler warning in case 'me' is not used */
+    return QM_ENTRY(&PhaseDetector_LOCKED_s);
+}
+/* ${AOs::PhaseDetector::SM::LOCKED} */
+static QState PhaseDetector_LOCKED(PhaseDetector * const me) {
+    QState status_;
+    switch (Q_SIG(me)) {
+        /* ${AOs::PhaseDetector::SM::LOCKED::SAMPLE_READY} */
+        case SAMPLE_READY_SIG: {
+            BSP_decoding(Q_PAR(me));
             status_ = QM_HANDLED();
             break;
         }

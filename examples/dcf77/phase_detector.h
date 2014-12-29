@@ -20,6 +20,8 @@
 
 enum PhaseDetectorSignals {
     SAMPLE_READY_SIG = Q_USER_SIG,
+    LOCKED_SIG,
+    NO_LOCK_SIG
 };
 
 // active objects ................................................*/

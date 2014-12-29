@@ -17,7 +17,8 @@
 /*${AOs::.::main.c} ........................................................*/
 #include "qpn_port.h"           /* QP-nano port */
 #include "bsp.h"                /* Board Support Package (BSP) */
-#include "phase_detector.h"     /* application interface */
+#include "phase_detector.h"
+
 /*..........................................................................*/
 static QEvt l_dcf77Queue[2];
 

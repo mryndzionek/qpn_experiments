@@ -5,29 +5,53 @@
   <class name="PhaseDetector" superclass="qpn::QMActive">
    <statechart>
     <initial target="../1">
-     <initial_glyph conn="3,3,5,0,16,3">
+     <initial_glyph conn="3,3,5,0,15,3">
       <action box="0,-2,6,2"/>
      </initial_glyph>
     </initial>
-    <state name="BINNING">
-     <entry>QActive_arm((QActive *)me, BINNING_PERIOD_MS);</entry>
+    <state name="NOT_LOCKED">
+     <entry>BSP_MsgNotLocked();
+QActive_arm((QActive *)me, BINNING_PERIOD_MS);</entry>
      <exit>QActive_disarm((QActive *)me);</exit>
      <tran trig="SAMPLE_READY">
       <action>BSP_binning(Q_PAR(me));</action>
-      <tran_glyph conn="7,15,3,-1,21">
+      <tran_glyph conn="6,15,3,-1,21">
        <action box="0,-2,13,2"/>
       </tran_glyph>
      </tran>
      <tran trig="Q_TIMEOUT">
-      <action>BSP_convolution();
-QActive_arm((QActive *)me, BINNING_PERIOD_MS);</action>
-      <tran_glyph conn="7,20,3,-1,23">
+      <choice target="../../../2">
+       <guard>BSP_convolution()</guard>
+       <choice_glyph conn="29,20,5,3,27">
+        <action box="0,-2,14,2"/>
+       </choice_glyph>
+      </choice>
+      <choice>
+       <guard>else</guard>
+       <action>QActive_arm((QActive *)me, BINNING_PERIOD_MS);</action>
+       <choice_glyph conn="29,20,4,-1,6">
+        <action box="-5,3,10,2"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="6,20,3,-1,23">
        <action box="0,-2,10,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="7,6,33,24">
+     <state_glyph node="6,6,39,24">
       <entry box="1,2,6,2"/>
       <exit box="1,4,6,2"/>
+     </state_glyph>
+    </state>
+    <state name="LOCKED">
+     <entry>BSP_MsgLocked();</entry>
+     <tran trig="SAMPLE_READY">
+      <action>BSP_decoding(Q_PAR(me));</action>
+      <tran_glyph conn="94,24,1,-1,-23">
+       <action box="-14,-2,13,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="56,7,38,23">
+      <entry box="1,2,6,2"/>
      </state_glyph>
     </state>
     <state_diagram size="101,53"/>
@@ -45,6 +69,8 @@ QActive_arm((QActive *)me, BINNING_PERIOD_MS);</action>
 
 enum PhaseDetectorSignals {
     SAMPLE_READY_SIG = Q_USER_SIG,
+    LOCKED_SIG,
+    NO_LOCK_SIG
 };
 
 // active objects ................................................*/
@@ -62,7 +88,8 @@ extern struct PhaseDetector AO_PhaseDetector;
 /*Q_DEFINE_THIS_FILE*/
 
 #define PAUSE_MS             (BSP_TICKS_PER_SEC / 10)
-#define BINNING_PERIOD_MS    (BSP_TICKS_PER_SEC * 5)
+#define BINNING_PERIOD_MS    (BSP_TICKS_PER_SEC * 3)
+#define LCD_REFRESH_RATE     (BSP_TICKS_PER_SEC * 5)
 
 /* PhaseDetector class declaration -----------------------------------------------*/
 $declare(AOs::PhaseDetector)
@@ -77,7 +104,8 @@ $define(AOs::PhaseDetector)</text>
    <file name="main.c">
     <text>#include &quot;qpn_port.h&quot;           /* QP-nano port */
 #include &quot;bsp.h&quot;                /* Board Support Package (BSP) */
-#include &quot;phase_detector.h&quot;     /* application interface */
+#include &quot;phase_detector.h&quot;
+
 /*..........................................................................*/
 static QEvt l_dcf77Queue[2];
 
