@@ -9,10 +9,16 @@
 #include "phase_detector.h"
 #include "decoder.h"
 
+#define IDLE_LED            (5)
+#define DATA_LED            (4)         // PWM
+#define SIGNAL_LED          (0)
+
+#define LED_MASK            (_BV(IDLE_LED) | _BV(DATA_LED) | _BV(SIGNAL_LED))
+
 #define LED_OFF(num_)       (PORTD &= ~(1 << (num_)))
 #define LED_ON(num_)        (PORTD |= (1 << (num_)))
-#define LED_OFF_ALL()       (PORTD &= ~(0x7F))
-#define LED_ON_ALL()        (PORTD |= 0x7F)
+#define LED_OFF_ALL()       (PORTD &= ~(LED_MASK))
+#define LED_ON_ALL()        (PORTD |= LED_MASK)
 
 #define BIN_COUNT           (100)
 #define SAMPLES_PER_BIN     (BSP_TICKS_PER_SEC / BIN_COUNT)
@@ -352,8 +358,8 @@ void QF_onStartup(void) {
 void QK_onIdle(void) {        /* entered with interrupts LOCKED, see NOTE01 */
 
     QF_INT_DISABLE();
-    LED_ON(5);
-    LED_OFF(5);
+    LED_ON(IDLE_LED);
+    LED_OFF(IDLE_LED);
     QF_INT_ENABLE();
 
 #ifdef NDEBUG
@@ -429,9 +435,9 @@ static char const *get_cursor()
 static void display_time(uint8_t tick_value)
 {
     if(tick_value)
-        LED_ON(0);
+        LED_ON(DATA_LED);
     else
-        LED_OFF(0);
+        LED_OFF(DATA_LED);
 
     lcd_font_num(now.hour.digit.hi, 0);
     lcd_font_num(now.hour.digit.lo, 3);
@@ -621,9 +627,9 @@ void BSP_decoding(uint16_t par) {
     pbins.tick = (par >> 8) & 0xFF;
 
     if (par & 0x01) {
-        LED_ON(4);
+        LED_ON(SIGNAL_LED);
     } else {
-        LED_OFF(4);
+        LED_OFF(SIGNAL_LED);
     }
 
     if (bins_to_process == 0) {
