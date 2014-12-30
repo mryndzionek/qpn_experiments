@@ -156,6 +156,11 @@ static QState Decoder_SYNCING(Decoder * const me) {
             }
             break;
         }
+        /* ${AOs::Decoder::SM::SYNCING::PHASE_UPDATE} */
+        case PHASE_UPDATE_SIG: {
+            status_ = QM_HANDLED();
+            break;
+        }
         default: {
             status_ = QM_SUPER();
             break;
