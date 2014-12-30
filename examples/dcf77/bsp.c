@@ -24,6 +24,7 @@
 #define THRESHOLD           (30)
 #define HOURS_PER_DAY       (24)
 #define SECONDS_PER_MINUTE  (60)
+#define MINUTES_PER_HOUR    (60)
 #define SYNC_MARK           (0)
 #define UNDEFINED           (1)
 #define SHORT_TICK          (2)
@@ -43,6 +44,15 @@
         _name.max_index = 0; \
         _name.noise_max = 0; \
         _name.tick = 0;
+
+#define ADVANCE_TICK_DECL(_name, _size) \
+        void advance_## _name(_name ## _bins_t *bins) { \
+    if (bins->tick < _size - 1) { \
+        ++bins->tick; \
+    } else { \
+        bins->tick = 0; \
+    } \
+} \
 
 #define GET_TIME_VALUE_DECL(_name, _size, _offset) \
         bcd_t get_## _name(const _name ## _bins_t *bins) { \
@@ -132,12 +142,13 @@ typedef union {
 } bcd_t;
 
 typedef struct {
+    uint8_t data[MINUTES_PER_HOUR];
     uint8_t tick;
 
     uint32_t noise_max;
     uint32_t max;
     uint8_t max_index;
-} bins_t;
+} minute_bins_t;
 
 typedef struct {
     uint8_t data[HOURS_PER_DAY];
@@ -166,9 +177,19 @@ typedef struct {
     uint8_t max_index;
 } sync_bins_t;
 
+typedef struct {
+    bcd_t hour;     // 0..23
+    bcd_t minute;   // 0..59
+    uint8_t second;      // 0..60
+
+} time_data_t;
+
 static phase_bins_t pbins;
 static sync_bins_t sbins;
 static hour_bins_t hbins;
+static minute_bins_t mbins;
+
+static time_data_t now;
 
 static bcd_t int_to_bcd(const uint8_t value) {
     const uint8_t hi = value / 10;
@@ -180,7 +201,7 @@ static bcd_t int_to_bcd(const uint8_t value) {
     return result;
 }
 
-void increment(bcd_t *value) {
+static void increment(bcd_t *value) {
     if (value->digit.lo < 9) {
         ++value->digit.lo;
     } else {
@@ -224,9 +245,15 @@ uint8_t parity(const uint8_t value) {
 
 static COMPUTE_MAX_INDEX_DECL(sync, SECONDS_PER_MINUTE);
 
-static GET_TIME_VALUE_DECL(hour, HOURS_PER_DAY, 1);
+static GET_TIME_VALUE_DECL(hour, HOURS_PER_DAY, 0);
 static COMPUTE_MAX_INDEX_DECL(hour, HOURS_PER_DAY);
-static HAMMING_BINNING_DECL(hour, 24, 7, 1);
+static HAMMING_BINNING_DECL(hour, 24, HOURS_PER_DAY, 1);
+static ADVANCE_TICK_DECL(hour, HOURS_PER_DAY);
+
+static GET_TIME_VALUE_DECL(minute, MINUTES_PER_HOUR, 0);
+static COMPUTE_MAX_INDEX_DECL(minute, MINUTES_PER_HOUR);
+static HAMMING_BINNING_DECL(minute, MINUTES_PER_HOUR, 8, 1);
+static ADVANCE_TICK_DECL(minute, MINUTES_PER_HOUR);
 
 /*..........................................................................*/
 ISR(TIMER1_COMPA_vect) {
@@ -272,6 +299,7 @@ void BSP_init(void) {
     INIT_BIN(pbins, HOURS_PER_DAY);
     INIT_BIN(sbins, HOURS_PER_DAY);
     INIT_BIN(hbins, HOURS_PER_DAY);
+    INIT_BIN(mbins, MINUTES_PER_HOUR);
 }
 /*..........................................................................*/
 void QF_onStartup(void) {
@@ -321,7 +349,16 @@ static inline uint16_t wrap(const uint16_t value) {
 }
 
 /*..........................................................................*/
-static char const *bin2dec3(uint32_t val) {
+static char const *bin2dec2(uint8_t val) {
+    static char str[] = "DD";
+    str[1] = '0' + (val % 10);
+    val /= 10;
+    str[0] = '0' + (val % 10);
+    return str;
+}
+
+/*..........................................................................*/
+static char const *bin2dec3(uint16_t val) {
     static char str[] = "DDD";
     str[2] = '0' + (val % 10);
     val /= 10;
@@ -609,18 +646,20 @@ void BSP_dispDecoding(uint16_t data) {
     uint8_t tick_data = (data >> 8) & 0xFF;
     uint8_t current_second = data &0xFF;
 
-    lcd_set_line(0);
-    lcd_putstr("Decoding");
-    lcd_putstr(get_cursor());
+    now.second = current_second;
 
-    static bcd_t hour_data;
+    if (now.second == 0) {
+        advance_minute(&mbins);
+        if (now.minute.val == 0x00) {
+
+            // "while" takes automatically care of timezone change
+            while (get_hour(&hbins).val <= 0x23 && get_hour(&hbins).val != now.hour.val) { advance_hour(&hbins); }
+        }
+    }
 
     const uint8_t tick_value = (tick_data == LONG_TICK || tick_data == UNDEFINED)? 1: 0;
 
-    if(tick_value)
-        LED_ON(0);
-    else
-        LED_OFF(0);
+    static bcd_t hour_data;
 
     switch (current_second) {
     case 29: hour_data.val +=      tick_value; break;
@@ -637,16 +676,46 @@ void BSP_dispDecoding(uint16_t data) {
     default: hour_data.val = 0;
     }
 
-    const bcd_t h  = get_hour(&hbins);
+    static bcd_t minute_data;
+
+    switch (current_second) {
+    case 21: minute_data.val +=      tick_value; break;
+    case 22: minute_data.val +=  0x2*tick_value; break;
+    case 23: minute_data.val +=  0x4*tick_value; break;
+    case 24: minute_data.val +=  0x8*tick_value; break;
+    case 25: minute_data.val += 0x10*tick_value; break;
+    case 26: minute_data.val += 0x20*tick_value; break;
+    case 27: minute_data.val += 0x40*tick_value; break;
+    case 28: minute_data.val += 0x80*tick_value;        // Parity !!!
+    hamming_minute_binning(&mbins, minute_data); break;
+    case 29: compute_max_minute_index(&mbins);
+    // fall through on purpose
+    default: minute_data.val = 0;
+
+    now.hour = get_hour(&hbins);
+    now.minute = get_minute(&mbins);
+
+
+    if(tick_value)
+        LED_ON(0);
+    else
+        LED_OFF(0);
+
+
+    lcd_set_line(0);
+    lcd_putstr("DCF77 time");
+    lcd_putstr(get_cursor());
 
     lcd_set_line(1);
-    lcd_putchar('0' + h.digit.hi);
-    lcd_putchar('0' + h.digit.lo);
-    lcd_putstr("h ");
+    lcd_putchar('0' + now.hour.digit.hi);
+    lcd_putchar('0' + now.hour.digit.lo);
+    lcd_putstr(":");
+    lcd_putchar('0' + now.minute.digit.hi);
+    lcd_putchar('0' + now.minute.digit.lo);
+    lcd_putstr(":");
+    lcd_putstr(bin2dec2(now.second));
 
-    lcd_putstr(bin2dec3(data & 0xFF));
-    lcd_putstr("s ");
-
+    }
 }
 
 /*..........................................................................*/
