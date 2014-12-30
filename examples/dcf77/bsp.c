@@ -22,6 +22,7 @@
 #define BINS_PER_100MS      (10 * BINS_PER_10MS)
 #define BINS_PER_200MS      (20 * BINS_PER_10MS)
 #define THRESHOLD           (30)
+#define HOURS_PER_DAY       (24)
 #define SECONDS_PER_MINUTE  (60)
 #define SYNC_MARK           (0)
 #define UNDEFINED           (1)
@@ -31,6 +32,121 @@
 
 #define BOUNDED_INCREMENT(_val, n) if (_val >= 255 - n) { _val = 255; } else { _val += n; }
 #define BOUNDED_DECREMENT(_val, n) if (_val <= n) { _val = 0; } else { _val -= n; }
+#define SCORE(_bin, _input, _candidate, _sig) do { \
+        const uint8_t the_score = _sig - bit_count(_input.val ^ _candidate.val); \
+        bounded_add(_bin, the_score); \
+} while(0) \
+
+#define INIT_BIN(_name, _size) \
+        memset (_name.data, 0, _size); \
+        _name.max = 0; \
+        _name.max_index = 0; \
+        _name.noise_max = 0; \
+        _name.tick = 0;
+
+#define GET_TIME_VALUE_DECL(_name, _size, _offset) \
+        bcd_t get_## _name(const _name ## _bins_t *bins) { \
+    \
+    const uint8_t threshold = 2; \
+    \
+    if (bins->max - bins->noise_max >= threshold) { \
+        return int_to_bcd((bins->max_index + bins->tick + 1) % _size + _offset); \
+    } else { \
+        bcd_t undefined; \
+        undefined.val = 0xff; \
+        return undefined; \
+    } \
+} \
+
+#define COMPUTE_MAX_INDEX_DECL(_name, _size) \
+        inline void compute_max_ ## _name ## _index(_name ## _bins_t *bins) { \
+    \
+    uint8_t index; \
+    bins->noise_max = 0; \
+    bins->max = 0; \
+    bins->max_index = 255; \
+    for (index = 0; index < _size; ++index) { \
+        const uint8_t bin_data = bins->data[index]; \
+        \
+        if (bin_data >= bins->max) { \
+            bins->noise_max = sbins.max; \
+            bins->max = bin_data; \
+            bins->max_index = index; \
+        } else if (bin_data > bins->noise_max) { \
+            bins->noise_max = bin_data; \
+        } \
+    } \
+} \
+
+#define HAMMING_BINNING_DECL(_name, _num, _sig, _par) \
+        void hamming_ ## _name ## _binning(_name ## _bins_t *bins, const bcd_t input) { \
+    uint8_t bin_index; \
+    \
+    if (bins->max > 255 - _sig) { \
+        for (bin_index = 0; bin_index < _num; ++bin_index) { \
+            BOUNDED_DECREMENT(bins->data[bin_index], _sig); \
+        } \
+        bins->max -= _sig; \
+        BOUNDED_DECREMENT(bins->noise_max, _sig); \
+    } \
+    \
+    const uint8_t offset = _num - 1 - bins->tick; \
+    uint8_t pass; \
+    bin_index = offset; \
+    \
+    bcd_t candidate; \
+    candidate.val = 0x00; \
+    for (pass=0; pass < _num; ++pass) { \
+        \
+        if (_par) { \
+            candidate.bit.b7 = parity(candidate.val); \
+            SCORE(&bins->data[bin_index], input, candidate, _sig); \
+            candidate.bit.b7 = 0; \
+        } else { \
+            SCORE(&bins->data[bin_index], input, candidate, _sig); \
+        } \
+        \
+        bin_index = bin_index < _num - 1 ? bin_index + 1 : 0; \
+        increment(&candidate); \
+    } \
+} \
+
+typedef union {
+    struct {
+        uint8_t lo:4;
+        uint8_t hi:4;
+    } digit;
+
+    struct {
+        uint8_t b0:1;
+        uint8_t b1:1;
+        uint8_t b2:1;
+        uint8_t b3:1;
+        uint8_t b4:1;
+        uint8_t b5:1;
+        uint8_t b6:1;
+        uint8_t b7:1;
+    } bit;
+
+    uint8_t val;
+} bcd_t;
+
+typedef struct {
+    uint8_t tick;
+
+    uint32_t noise_max;
+    uint32_t max;
+    uint8_t max_index;
+} bins_t;
+
+typedef struct {
+    uint8_t data[HOURS_PER_DAY];
+    uint8_t tick;
+
+    uint32_t noise_max;
+    uint32_t max;
+    uint8_t max_index;
+} hour_bins_t;
 
 typedef struct {
     uint16_t data[BIN_COUNT];
@@ -39,7 +155,7 @@ typedef struct {
     uint32_t noise_max;
     uint32_t max;
     uint8_t max_index;
-} phase_bins;
+} phase_bins_t;
 
 typedef struct {
     uint16_t data[SECONDS_PER_MINUTE];
@@ -48,11 +164,69 @@ typedef struct {
     uint32_t noise_max;
     uint32_t max;
     uint8_t max_index;
-} sync_bins;
+} sync_bins_t;
 
+static phase_bins_t pbins;
+static sync_bins_t sbins;
+static hour_bins_t hbins;
 
-static phase_bins pbins;
-static sync_bins sbins;
+static bcd_t int_to_bcd(const uint8_t value) {
+    const uint8_t hi = value / 10;
+
+    bcd_t result;
+    result.digit.hi = hi;
+    result.digit.lo = value-10*hi;
+
+    return result;
+}
+
+void increment(bcd_t *value) {
+    if (value->digit.lo < 9) {
+        ++value->digit.lo;
+    } else {
+        value->digit.lo = 0;
+
+        if (value->digit.hi < 9) {
+            ++value->digit.hi;
+        } else {
+            value->digit.hi = 0;
+        }
+    }
+}
+
+inline void bounded_add(uint8_t *value, const uint8_t amount) __attribute__((always_inline));
+void bounded_add(uint8_t *value, const uint8_t amount) {
+    if (*value >= 255-amount) { *value = 255; } else { *value += amount; }
+}
+
+inline void bounded_sub(uint8_t *value, const uint8_t amount) __attribute__((always_inline));
+void bounded_sub(uint8_t *value, const uint8_t amount) {
+    if (*value <= amount) { *value = 0; } else { *value -= amount; }
+}
+
+inline uint8_t bit_count(const uint8_t value) __attribute__((always_inline));
+uint8_t bit_count(const uint8_t value) {
+    const uint8_t tmp1 = (value & 0b01010101) + ((value>>1) & 0b01010101);
+    const uint8_t tmp2 = (tmp1  & 0b00110011) + ((tmp1>>2) & 0b00110011);
+    return (tmp2 & 0x0f) + (tmp2>>4);
+}
+
+inline uint8_t parity(const uint8_t value) __attribute__((always_inline));
+uint8_t parity(const uint8_t value) {
+    uint8_t tmp = value;
+
+    tmp = (tmp & 0xf) ^ (tmp >> 4);
+    tmp = (tmp & 0x3) ^ (tmp >> 2);
+    tmp = (tmp & 0x1) ^ (tmp >> 1);
+
+    return tmp;
+}
+
+static COMPUTE_MAX_INDEX_DECL(sync, SECONDS_PER_MINUTE);
+
+static GET_TIME_VALUE_DECL(hour, HOURS_PER_DAY, 1);
+static COMPUTE_MAX_INDEX_DECL(hour, HOURS_PER_DAY);
+static HAMMING_BINNING_DECL(hour, 24, 7, 1);
 
 /*..........................................................................*/
 ISR(TIMER1_COMPA_vect) {
@@ -95,18 +269,9 @@ void BSP_init(void) {
     LED_OFF_ALL();                                     /* turn off all LEDs */
     lcd_init();
 
-    memset (pbins.data, 0, BIN_COUNT);
-    memset (sbins.data, 0, SECONDS_PER_MINUTE);
-
-    pbins.max = 0;
-    pbins.max_index = 0;
-    pbins.noise_max = 0;
-    pbins.tick = 0;
-
-    sbins.max = 0;
-    sbins.max_index = 0;
-    sbins.noise_max = 0;
-    sbins.tick = 0;
+    INIT_BIN(pbins, HOURS_PER_DAY);
+    INIT_BIN(sbins, HOURS_PER_DAY);
+    INIT_BIN(hbins, HOURS_PER_DAY);
 }
 /*..........................................................................*/
 void QF_onStartup(void) {
@@ -207,25 +372,6 @@ static uint8_t get_second() {
     }
 }
 
-static inline void compute_max_index() {
-
-    uint8_t index;
-    sbins.noise_max = 0;
-    sbins.max = 0;
-    sbins.max_index = 255;
-    for (index = 0; index < SECONDS_PER_MINUTE; ++index) {
-        const uint8_t bin_data = sbins.data[index];
-
-        if (bin_data >= sbins.max) {
-            sbins.noise_max = sbins.max;
-            sbins.max = bin_data;
-            sbins.max_index = index;
-        } else if (bin_data > sbins.noise_max) {
-            sbins.noise_max = bin_data;
-        }
-    }
-}
-
 static void sync_mark_binning(const uint8_t tick_data) {
     // We use a binning approach to find out the proper phase.
     // The goal is to localize the sync_mark. Due to noise
@@ -311,7 +457,7 @@ static void sync_mark_binning(const uint8_t tick_data) {
         // that is: after we have a "lock" this will be processed whenever
         // the sync mark was detected
 
-        compute_max_index();
+        compute_max_sync_index(&sbins);
     }
 }
 
@@ -352,12 +498,10 @@ void BSP_binning(uint16_t par) {
     pbins.tick = (par >> 8) & 0xFF;
 
     if (par & 0x01) {
-        LED_ON(0);
         if (pbins.data[pbins.tick] < N_PREC) {
             ++pbins.data[pbins.tick];
         }
     } else {
-        LED_OFF(0);
         if (pbins.data[pbins.tick] > 0) {
             --pbins.data[pbins.tick];
         }
@@ -371,9 +515,9 @@ void BSP_decoding(uint16_t par) {
     pbins.tick = (par >> 8) & 0xFF;
 
     if (par & 0x01) {
-        LED_ON(0);
+        LED_ON(4);
     } else {
-        LED_OFF(0);
+        LED_OFF(4);
     }
 
     if (bins_to_process == 0) {
@@ -462,17 +606,47 @@ void BSP_dispSyncing(uint16_t data) {
 /*..........................................................................*/
 void BSP_dispDecoding(uint16_t data) {
 
+    uint8_t tick_data = (data >> 8) & 0xFF;
+    uint8_t current_second = data &0xFF;
+
     lcd_set_line(0);
     lcd_putstr("Decoding");
     lcd_putstr(get_cursor());
 
-    uint8_t decoded_data = (data >> 8) & 0xFF;
+    static bcd_t hour_data;
+
+    const uint8_t tick_value = (tick_data == LONG_TICK || tick_data == UNDEFINED)? 1: 0;
+
+    if(tick_value)
+        LED_ON(0);
+    else
+        LED_OFF(0);
+
+    switch (current_second) {
+    case 29: hour_data.val +=      tick_value; break;
+    case 30: hour_data.val +=  0x2*tick_value; break;
+    case 31: hour_data.val +=  0x4*tick_value; break;
+    case 32: hour_data.val +=  0x8*tick_value; break;
+    case 33: hour_data.val += 0x10*tick_value; break;
+    case 34: hour_data.val += 0x20*tick_value; break;
+    case 35: hour_data.val += 0x80*tick_value;        // Parity !!!
+    hamming_hour_binning(&hbins, hour_data); break;
+
+    case 36: compute_max_hour_index(&hbins);
+    // fall through on purpose
+    default: hour_data.val = 0;
+    }
+
+    const bcd_t h  = get_hour(&hbins);
 
     lcd_set_line(1);
-    lcd_putstr("sec:");
+    lcd_putchar('0' + h.digit.hi);
+    lcd_putchar('0' + h.digit.lo);
+    lcd_putstr("h ");
+
     lcd_putstr(bin2dec3(data & 0xFF));
-    lcd_putstr(" data:");
-    lcd_putstr((decoded_data > 1) ? bin2dec3(decoded_data - 2) : (decoded_data == 1) ? "  E" : "  S");
+    lcd_putstr("s ");
+
 }
 
 /*..........................................................................*/
