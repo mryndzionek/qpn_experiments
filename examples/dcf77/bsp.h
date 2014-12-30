@@ -14,8 +14,8 @@ void BSP_binning(uint16_t par);
 void BSP_decoding(uint16_t par);
 bool BSP_convolution(void);
 void BSP_dispLocking(void);
-void BSP_dispSyncing(uint16_t data);
-void BSP_dispDecoding(uint16_t data);
+uint8_t BSP_dispSyncing(uint8_t data);
+uint8_t BSP_dispDecoding(uint8_t data);
 void BSP_dispClear(void);
 
 #define BSP_showState(state_) ((void)0)

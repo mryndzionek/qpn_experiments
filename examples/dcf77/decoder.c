@@ -50,11 +50,10 @@ static QMState const Decoder_SYNCING_s = {
     Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 static QState Decoder_DECODING  (Decoder * const me);
-static QState Decoder_DECODING_e(Decoder * const me);
 static QMState const Decoder_DECODING_s = {
     (QMState const *)0, /* superstate (top) */
     Q_STATE_CAST(&Decoder_DECODING),
-    Q_ACTION_CAST(&Decoder_DECODING_e),
+    Q_ACTION_CAST(0), /* no entry action */
     Q_ACTION_CAST(0), /* no exit action */
     Q_ACTION_CAST(0)  /* no intitial tran. */
 };
@@ -134,20 +133,20 @@ static QState Decoder_SYNCING(Decoder * const me) {
     switch (Q_SIG(me)) {
         /* ${AOs::Decoder::SM::SYNCING::DCF_DATA} */
         case DCF_DATA_SIG: {
-            BSP_dispSyncing(Q_PAR(me));
-            /* ${AOs::Decoder::SM::SYNCING::DCF_DATA::[(Q_PAR(me)&0xFF~} */
-            if ((Q_PAR(me) & 0xFF) != 0xFF) {
+            /* ${AOs::Decoder::SM::SYNCING::DCF_DATA::[BSP_dispSyncing~} */
+            if (BSP_dispSyncing(Q_PAR(me)) != 0xFF) {
                 static struct {
                     QMState const *target;
-                    QActionHandler act[3];
+                    QActionHandler act[2];
                 } const tatbl_ = { /* transition-action table */
                     &Decoder_DECODING_s, /* target state */
                     {
                         Q_ACTION_CAST(&Decoder_SYNCING_x), /* exit */
-                        Q_ACTION_CAST(&Decoder_DECODING_e), /* entry */
                         Q_ACTION_CAST(0) /* zero terminator */
                     }
                 };
+                BSP_dispClear();
+                BSP_dispDecoding(Q_PAR(me));
                 status_ = QM_TRAN(&tatbl_);
             }
             /* ${AOs::Decoder::SM::SYNCING::DCF_DATA::[else]} */
@@ -171,20 +170,13 @@ static QState Decoder_SYNCING(Decoder * const me) {
 }
 /*${AOs::Decoder::SM::DECODING} ............................................*/
 /* ${AOs::Decoder::SM::DECODING} */
-static QState Decoder_DECODING_e(Decoder * const me) {
-    BSP_dispClear();
-    (void)me; /* avoid compiler warning in case 'me' is not used */
-    return QM_ENTRY(&Decoder_DECODING_s);
-}
-/* ${AOs::Decoder::SM::DECODING} */
 static QState Decoder_DECODING(Decoder * const me) {
     QState status_;
     switch (Q_SIG(me)) {
         /* ${AOs::Decoder::SM::DECODING::DCF_DATA} */
         case DCF_DATA_SIG: {
-            BSP_dispDecoding(Q_PAR(me));
-            /* ${AOs::Decoder::SM::DECODING::DCF_DATA::[(Q_PAR(me)&0xFF~} */
-            if ((Q_PAR(me) & 0xFF) == 0xFF) {
+            /* ${AOs::Decoder::SM::DECODING::DCF_DATA::[BSP_dispDecodin~} */
+            if (BSP_dispDecoding(Q_PAR(me)) == 0xFF) {
                 static QMTranActTable const tatbl_ = { /* transition-action table */
                     &Decoder_SYNCING_s,
                     {

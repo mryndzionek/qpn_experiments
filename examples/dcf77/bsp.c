@@ -180,6 +180,7 @@ typedef struct {
 typedef struct {
     bcd_t hour;     // 0..23
     bcd_t minute;   // 0..59
+    bcd_t prev_minute;
     uint8_t second;      // 0..60
 
 } time_data_t;
@@ -241,6 +242,42 @@ uint8_t parity(const uint8_t value) {
     tmp = (tmp & 0x1) ^ (tmp >> 1);
 
     return tmp;
+}
+
+static void increment_bcd(bcd_t *value) {
+    if (value->digit.lo < 9) {
+        ++value->digit.lo;
+    } else {
+        value->digit.lo = 0;
+
+        if (value->digit.hi < 9) {
+            ++value->digit.hi;
+        } else {
+            value->digit.hi = 0;
+        }
+    }
+}
+
+static void advance_second(time_data_t *now) {
+    // in case some value is out of range it will not be advanced
+    // this is on purpose
+    if (now->second < 59) {
+        ++now->second;
+    } else {
+        now->second = 0;
+
+        if (now->minute.val < 0x59) {
+            increment_bcd(&now->minute);
+        } else if (now->minute.val == 0x59) {
+            now->minute.val = 0x00;
+
+            if (now->hour.val < 0x23) {
+                increment_bcd(&now->hour);
+            } else if (now->hour.val == 0x23) {
+                now->hour.val = 0x00;
+            }
+        }
+    }
 }
 
 static COMPUTE_MAX_INDEX_DECL(sync, SECONDS_PER_MINUTE);
@@ -521,9 +558,9 @@ static void decode_220ms(const uint8_t input, const uint8_t bins_to_go) {
             //               1 --> undefined,
             //               0 --> sync_mark
 
+            advance_second(&now);
             sync_mark_binning(decoded_data);
-
-            QActive_post((QActive *)&AO_Decoder, DCF_DATA_SIG, (uint16_t)get_second() | (decoded_data << 8));
+            QActive_post((QActive *)&AO_Decoder, DCF_DATA_SIG, decoded_data);
 
         }
     }
@@ -632,23 +669,35 @@ void BSP_dispLocking(void) {
 }
 
 /*..........................................................................*/
-void BSP_dispSyncing(uint16_t data) {
+uint8_t BSP_dispSyncing(uint8_t tick_data) {
 
     lcd_set_line(0);
     lcd_putstr("Syncing");
     lcd_putstr(get_cursor());
+    lcd_set_line(1);
+    lcd_putstr("QoS: ");
+    lcd_putstr(bin2dec3(sbins.max - sbins.noise_max));
+    lcd_putchar('/');
+    lcd_putstr(bin2dec2(LOCK_TRESHOLD));
+
+    now.prev_minute.val = 0xFF;
+    return get_second(&sbins);
 
 }
 
 /*..........................................................................*/
-void BSP_dispDecoding(uint16_t data) {
+uint8_t BSP_dispDecoding(uint8_t tick_data) {
 
-    uint8_t tick_data = (data >> 8) & 0xFF;
-    uint8_t current_second = data &0xFF;
+    now.second = get_second(&sbins);
+    if(now.second == 0xFF)
+        return 0xFF;
 
-    now.second = current_second;
+    now.hour = get_hour(&hbins);
+    now.minute = get_minute(&mbins);
 
     if (now.second == 0) {
+
+        now.prev_minute = now.minute;
         advance_minute(&mbins);
         if (now.minute.val == 0x00) {
 
@@ -661,7 +710,7 @@ void BSP_dispDecoding(uint16_t data) {
 
     static bcd_t hour_data;
 
-    switch (current_second) {
+    switch (now.second) {
     case 29: hour_data.val +=      tick_value; break;
     case 30: hour_data.val +=  0x2*tick_value; break;
     case 31: hour_data.val +=  0x4*tick_value; break;
@@ -678,7 +727,7 @@ void BSP_dispDecoding(uint16_t data) {
 
     static bcd_t minute_data;
 
-    switch (current_second) {
+    switch (now.second) {
     case 21: minute_data.val +=      tick_value; break;
     case 22: minute_data.val +=  0x2*tick_value; break;
     case 23: minute_data.val +=  0x4*tick_value; break;
@@ -692,15 +741,12 @@ void BSP_dispDecoding(uint16_t data) {
     // fall through on purpose
     default: minute_data.val = 0;
 
-    now.hour = get_hour(&hbins);
-    now.minute = get_minute(&mbins);
-
+    }
 
     if(tick_value)
         LED_ON(0);
     else
         LED_OFF(0);
-
 
     lcd_set_line(0);
     lcd_putstr("DCF77 time");
@@ -710,12 +756,13 @@ void BSP_dispDecoding(uint16_t data) {
     lcd_putchar('0' + now.hour.digit.hi);
     lcd_putchar('0' + now.hour.digit.lo);
     lcd_putstr(":");
-    lcd_putchar('0' + now.minute.digit.hi);
-    lcd_putchar('0' + now.minute.digit.lo);
+    lcd_putchar('0' + now.prev_minute.digit.hi);
+    lcd_putchar('0' + now.prev_minute.digit.lo);
     lcd_putstr(":");
-    lcd_putstr(bin2dec2(now.second));
+    lcd_putstr((now.second == 0xFF) ? "??" : bin2dec2(now.second));
 
-    }
+    return 0;
+
 }
 
 /*..........................................................................*/

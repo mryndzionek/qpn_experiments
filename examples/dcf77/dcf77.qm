@@ -105,9 +105,10 @@ BSP_dispSyncing(Q_PAR(me));</action>
     <state name="SYNCING">
      <exit>BSP_dispClear();</exit>
      <tran trig="DCF_DATA">
-      <action>BSP_dispSyncing(Q_PAR(me));</action>
       <choice target="../../../3">
-       <guard>(Q_PAR(me) &amp; 0xFF) != 0xFF</guard>
+       <guard>BSP_dispSyncing(Q_PAR(me)) != 0xFF</guard>
+       <action>BSP_dispClear();
+BSP_dispDecoding(Q_PAR(me));</action>
        <choice_glyph conn="72,20,4,0,18,-19,3">
         <action box="1,2,10,2"/>
        </choice_glyph>
@@ -132,9 +133,7 @@ BSP_dispSyncing(Q_PAR(me));</action>
      </state_glyph>
     </state>
     <state name="DECODING">
-     <entry>BSP_dispClear();</entry>
      <tran trig="DCF_DATA">
-      <action>BSP_dispDecoding(Q_PAR(me));</action>
       <choice>
        <guard>else</guard>
        <choice_glyph conn="49,49,5,-1,-9">
@@ -142,7 +141,7 @@ BSP_dispSyncing(Q_PAR(me));</action>
        </choice_glyph>
       </choice>
       <choice target="../../../2">
-       <guard>(Q_PAR(me) &amp; 0xFF) == 0xFF</guard>
+       <guard>BSP_dispDecoding(Q_PAR(me)) == 0xFF</guard>
        <action>BSP_dispClear();
 BSP_dispSyncing(Q_PAR(me));</action>
        <choice_glyph conn="49,49,4,3,-25,7">
@@ -153,9 +152,7 @@ BSP_dispSyncing(Q_PAR(me));</action>
        <action box="-9,-2,10,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="29,41,30,18">
-      <entry box="1,2,6,2"/>
-     </state_glyph>
+     <state_glyph node="29,41,30,18"/>
     </state>
     <state_diagram size="106,63"/>
    </statechart>
