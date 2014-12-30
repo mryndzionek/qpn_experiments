@@ -8,6 +8,7 @@ add_avr_executable(
     decoder.c
     bsp.c
     ${CMAKE_SOURCE_DIR}/lcd/lcd.c
+    ${CMAKE_SOURCE_DIR}/lcd/lcd_font.c
     ${CMAKE_SOURCE_DIR}/qpn/source/qepn.c
     ${CMAKE_SOURCE_DIR}/qpn/source/qfn.c
     ${CMAKE_SOURCE_DIR}/qpn/source/qkn.c

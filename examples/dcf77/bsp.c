@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "lcd.h"
+#include "lcd_font.h"
 #include "phase_detector.h"
 #include "decoder.h"
 
@@ -332,6 +333,7 @@ void BSP_init(void) {
     DDRD  = 0x7F;                    /* All PORTD pins are outputs for LEDs */
     LED_OFF_ALL();                                     /* turn off all LEDs */
     lcd_init();
+    lcd_font_init();
 
     INIT_BIN(pbins, HOURS_PER_DAY);
     INIT_BIN(sbins, HOURS_PER_DAY);
@@ -422,6 +424,36 @@ static char const *get_cursor()
     curs[0] = tmp;
 
     return curs;
+}
+
+static void display_time(uint8_t tick_value)
+{
+    if(tick_value)
+        LED_ON(0);
+    else
+        LED_OFF(0);
+
+    lcd_font_num(now.hour.digit.hi, 0);
+    lcd_font_num(now.hour.digit.lo, 3);
+
+    if(now.second & 0x01)
+    {
+        lcd_set_position(6);
+        lcd_putchar(0xA5);
+        lcd_set_position(LCD_COLS + 6);
+        lcd_putchar(0xA5);
+    } else {
+        lcd_set_position(6);
+        lcd_putchar(32);
+        lcd_set_position(LCD_COLS + 6);
+        lcd_putchar(32);
+    }
+
+    lcd_font_num(now.prev_minute.digit.hi, 7);
+    lcd_font_num(now.prev_minute.digit.lo, 10);
+
+    lcd_set_position(LCD_COLS - 2);
+    lcd_putstr((now.second == 0xFF) ? "??" : bin2dec2(now.second));
 }
 
 static uint8_t get_second() {
@@ -743,23 +775,7 @@ uint8_t BSP_dispDecoding(uint8_t tick_data) {
 
     }
 
-    if(tick_value)
-        LED_ON(0);
-    else
-        LED_OFF(0);
-
-    lcd_set_line(0);
-    lcd_putstr("DCF77 time");
-    lcd_putstr(get_cursor());
-
-    lcd_set_line(1);
-    lcd_putchar('0' + now.hour.digit.hi);
-    lcd_putchar('0' + now.hour.digit.lo);
-    lcd_putstr(":");
-    lcd_putchar('0' + now.prev_minute.digit.hi);
-    lcd_putchar('0' + now.prev_minute.digit.lo);
-    lcd_putstr(":");
-    lcd_putstr((now.second == 0xFF) ? "??" : bin2dec2(now.second));
+    display_time(tick_value);
 
     return 0;
 
