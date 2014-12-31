@@ -197,7 +197,7 @@ static sync_bins_t sbins;
 static hour_bins_t hbins;
 static minute_bins_t mbins;
 
-static time_data_t now;
+static time_data_t now = {.prev_minute.val = 0xFF};
 
 static bcd_t int_to_bcd(const uint8_t value) {
     const uint8_t hi = value / 10;
@@ -467,6 +467,7 @@ static void display_time(uint8_t tick_value)
 
     lcd_set_position(LCD_COLS - 2);
     lcd_putstr((now.second == 0xFF) ? "??" : bin2dec2(now.second));
+
 }
 
 static uint8_t get_second() {
@@ -724,7 +725,6 @@ uint8_t BSP_dispSyncing(uint8_t tick_data) {
     lcd_putchar('/');
     lcd_putstr(bin2dec2(LOCK_TRESHOLD));
 
-    now.prev_minute.val = 0xFF;
     return get_second(&sbins);
 
 }

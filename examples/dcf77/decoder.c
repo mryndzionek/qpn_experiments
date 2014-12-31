@@ -41,19 +41,21 @@ static QMState const Decoder_LOCKING_s = {
     Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 static QState Decoder_SYNCING  (Decoder * const me);
+static QState Decoder_SYNCING_e(Decoder * const me);
 static QState Decoder_SYNCING_x(Decoder * const me);
 static QMState const Decoder_SYNCING_s = {
     (QMState const *)0, /* superstate (top) */
     Q_STATE_CAST(&Decoder_SYNCING),
-    Q_ACTION_CAST(0), /* no entry action */
+    Q_ACTION_CAST(&Decoder_SYNCING_e),
     Q_ACTION_CAST(&Decoder_SYNCING_x),
     Q_ACTION_CAST(0)  /* no intitial tran. */
 };
 static QState Decoder_DECODING  (Decoder * const me);
+static QState Decoder_DECODING_e(Decoder * const me);
 static QMState const Decoder_DECODING_s = {
     (QMState const *)0, /* superstate (top) */
     Q_STATE_CAST(&Decoder_DECODING),
-    Q_ACTION_CAST(0), /* no entry action */
+    Q_ACTION_CAST(&Decoder_DECODING_e),
     Q_ACTION_CAST(0), /* no exit action */
     Q_ACTION_CAST(0)  /* no intitial tran. */
 };
@@ -102,14 +104,16 @@ static QState Decoder_LOCKING(Decoder * const me) {
         }
         /* ${AOs::Decoder::SM::LOCKING::DCF_DATA} */
         case DCF_DATA_SIG: {
-            static QMTranActTable const tatbl_ = { /* transition-action table */
-                &Decoder_SYNCING_s,
+            static struct {
+                QMState const *target;
+                QActionHandler act[2];
+            } const tatbl_ = { /* transition-action table */
+                &Decoder_SYNCING_s, /* target state */
                 {
+                    Q_ACTION_CAST(&Decoder_SYNCING_e), /* entry */
                     Q_ACTION_CAST(0) /* zero terminator */
                 }
             };
-            BSP_dispClear();
-            BSP_dispSyncing(Q_PAR(me));
             status_ = QM_TRAN(&tatbl_);
             break;
         }
@@ -121,6 +125,12 @@ static QState Decoder_LOCKING(Decoder * const me) {
     return status_;
 }
 /*${AOs::Decoder::SM::SYNCING} .............................................*/
+/* ${AOs::Decoder::SM::SYNCING} */
+static QState Decoder_SYNCING_e(Decoder * const me) {
+    BSP_dispClear();
+    (void)me; /* avoid compiler warning in case 'me' is not used */
+    return QM_ENTRY(&Decoder_SYNCING_s);
+}
 /* ${AOs::Decoder::SM::SYNCING} */
 static QState Decoder_SYNCING_x(Decoder * const me) {
     BSP_dispClear();
@@ -137,16 +147,15 @@ static QState Decoder_SYNCING(Decoder * const me) {
             if (BSP_dispSyncing(Q_PAR(me)) != 0xFF) {
                 static struct {
                     QMState const *target;
-                    QActionHandler act[2];
+                    QActionHandler act[3];
                 } const tatbl_ = { /* transition-action table */
                     &Decoder_DECODING_s, /* target state */
                     {
                         Q_ACTION_CAST(&Decoder_SYNCING_x), /* exit */
+                        Q_ACTION_CAST(&Decoder_DECODING_e), /* entry */
                         Q_ACTION_CAST(0) /* zero terminator */
                     }
                 };
-                BSP_dispClear();
-                BSP_dispDecoding(Q_PAR(me));
                 status_ = QM_TRAN(&tatbl_);
             }
             /* ${AOs::Decoder::SM::SYNCING::DCF_DATA::[else]} */
@@ -170,6 +179,12 @@ static QState Decoder_SYNCING(Decoder * const me) {
 }
 /*${AOs::Decoder::SM::DECODING} ............................................*/
 /* ${AOs::Decoder::SM::DECODING} */
+static QState Decoder_DECODING_e(Decoder * const me) {
+    BSP_dispClear();
+    (void)me; /* avoid compiler warning in case 'me' is not used */
+    return QM_ENTRY(&Decoder_DECODING_s);
+}
+/* ${AOs::Decoder::SM::DECODING} */
 static QState Decoder_DECODING(Decoder * const me) {
     QState status_;
     switch (Q_SIG(me)) {
@@ -177,14 +192,16 @@ static QState Decoder_DECODING(Decoder * const me) {
         case DCF_DATA_SIG: {
             /* ${AOs::Decoder::SM::DECODING::DCF_DATA::[BSP_dispDecodin~} */
             if (BSP_dispDecoding(Q_PAR(me)) == 0xFF) {
-                static QMTranActTable const tatbl_ = { /* transition-action table */
-                    &Decoder_SYNCING_s,
+                static struct {
+                    QMState const *target;
+                    QActionHandler act[2];
+                } const tatbl_ = { /* transition-action table */
+                    &Decoder_SYNCING_s, /* target state */
                     {
+                        Q_ACTION_CAST(&Decoder_SYNCING_e), /* entry */
                         Q_ACTION_CAST(0) /* zero terminator */
                     }
                 };
-                BSP_dispClear();
-                BSP_dispSyncing(Q_PAR(me));
                 status_ = QM_TRAN(&tatbl_);
             }
             /* ${AOs::Decoder::SM::DECODING::DCF_DATA::[else]} */
