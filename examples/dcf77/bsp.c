@@ -10,15 +10,15 @@
 #include "decoder.h"
 
 #define IDLE_LED            (5)
-#define DATA_LED            (4)         // PWM
 #define SIGNAL_LED          (0)
+#define PWM_LED             (PB3)
 
-#define LED_MASK            (_BV(IDLE_LED) | _BV(DATA_LED) | _BV(SIGNAL_LED))
-
+#define LED_MASK_PD         (_BV(IDLE_LED) | _BV(SIGNAL_LED))
+#define LED_MASK_PB         (_BV(PWM_LED))
 #define LED_OFF(num_)       (PORTD &= ~(1 << (num_)))
 #define LED_ON(num_)        (PORTD |= (1 << (num_)))
-#define LED_OFF_ALL()       (PORTD &= ~(LED_MASK))
-#define LED_ON_ALL()        (PORTD |= LED_MASK)
+#define LED_OFF_ALL()       (PORTD &= ~(LED_MASK_PD))
+#define LED_ON_ALL()        (PORTD |= LED_MASK_PD)
 
 #define BIN_COUNT           (100)
 #define SAMPLES_PER_BIN     (BSP_TICKS_PER_SEC / BIN_COUNT)
@@ -336,8 +336,15 @@ ISR(TIMER1_COMPA_vect) {
 }
 /*..........................................................................*/
 void BSP_init(void) {
-    DDRD  = 0x7F;                    /* All PORTD pins are outputs for LEDs */
+    DDRD = LED_MASK_PD;                    /* All PORTD pins are outputs for LEDs */
     LED_OFF_ALL();                                     /* turn off all LEDs */
+
+    DDRB = LED_MASK_PB;
+
+    TCCR0 |= _BV(WGM01) | _BV(WGM00) | (0b10 << COM00);
+    TCCR0 |= _BV(CS00);
+    OCR0 = 0;
+
     lcd_init();
     lcd_font_init();
 
@@ -435,9 +442,9 @@ static char const *get_cursor()
 static void display_time(uint8_t tick_value)
 {
     if(tick_value)
-        LED_ON(DATA_LED);
+        OCR0 = 255;
     else
-        LED_OFF(DATA_LED);
+        OCR0 = 10;
 
     lcd_font_num(now.hour.digit.hi, 0);
     lcd_font_num(now.hour.digit.lo, 3);
