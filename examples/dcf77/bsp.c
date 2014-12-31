@@ -603,8 +603,6 @@ static void decode_220ms(const uint8_t input, const uint8_t bins_to_go) {
             //               1 --> undefined,
             //               0 --> sync_mark
 
-            advance_second(&now);
-            sync_mark_binning(decoded_data);
             QActive_post((QActive *)&AO_Decoder, DCF_DATA_SIG, decoded_data);
 
         }
@@ -716,6 +714,7 @@ void BSP_dispLocking(void) {
 /*..........................................................................*/
 uint8_t BSP_dispSyncing(uint8_t tick_data) {
 
+    sync_mark_binning(tick_data);
     lcd_set_line(0);
     lcd_putstr("Syncing");
     lcd_putstr(get_cursor());
@@ -734,15 +733,14 @@ uint8_t BSP_dispSyncing(uint8_t tick_data) {
 uint8_t BSP_dispDecoding(uint8_t tick_data) {
 
     now.second = get_second(&sbins);
-    if(now.second == 0xFF)
-        return 0xFF;
-
     now.hour = get_hour(&hbins);
     now.minute = get_minute(&mbins);
 
+    advance_second(&now);
+    sync_mark_binning(tick_data);
+
     if (now.second == 0) {
 
-        now.prev_minute = now.minute;
         advance_minute(&mbins);
         if (now.minute.val == 0x00) {
 
@@ -789,6 +787,10 @@ uint8_t BSP_dispDecoding(uint8_t tick_data) {
     }
 
     display_time(tick_value);
+
+    if (now.second == 59) {
+        now.prev_minute = now.minute;
+    }
 
     return 0;
 

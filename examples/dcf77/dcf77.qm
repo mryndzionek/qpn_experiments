@@ -51,6 +51,7 @@
       </tran_glyph>
      </tran>
      <tran trig="Q_TIMEOUT">
+      <action>BSP_binning(Q_PAR(me));</action>
       <choice>
        <guard>BSP_convolution()</guard>
        <action>QActive_arm((QActive *)me, PHASE_UPDATE_MS);</action>
