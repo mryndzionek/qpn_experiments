@@ -9,11 +9,16 @@
 #include "phase_detector.h"
 #include "decoder.h"
 
-#define IDLE_LED            (5)
-#define SIGNAL_LED          (0)
-#define PWM_LED             (PB3)
+#define DCF_DEBUG
 
-#define LED_MASK_PD         (_BV(IDLE_LED) | _BV(SIGNAL_LED))
+#define IDLE_LED            (PD5)
+#define SIGNAL_LED          (PD0)
+#define PWM_LED_G           (PD3)
+#define PWM_LED_R           (PD4)
+#define PWM_LED             (PB3)
+#define DCF77_INPUT         (PD7)
+
+#define LED_MASK_PD         (_BV(IDLE_LED) | _BV(SIGNAL_LED) | _BV(PWM_LED_G) | _BV(PWM_LED_R))
 #define LED_MASK_PB         (_BV(PWM_LED))
 #define LED_OFF(num_)       (PORTD &= ~(1 << (num_)))
 #define LED_ON(num_)        (PORTD |= (1 << (num_)))
@@ -311,7 +316,7 @@ ISR(TIMER1_COMPA_vect) {
 
     QK_ISR_ENTRY();                     /* inform QK kernel about ISR entry */
 
-    if(PIND & (1 << 7))
+    if(PIND & _BV(DCF77_INPUT))
         average++;
 
     if (++curr_sample >= SAMPLES_PER_BIN) {
@@ -339,15 +344,16 @@ void BSP_init(void) {
     DDRD = LED_MASK_PD;                    /* All PORTD pins are outputs for LEDs */
     LED_OFF_ALL();                                     /* turn off all LEDs */
 
+    TCCR0|= (1<<WGM00)| (1<<WGM01) | (1<<COM01) | (1<<CS00);
+    OCR0=0x30;
     DDRB = LED_MASK_PB;
-
-    TCCR0 |= _BV(WGM01) | _BV(WGM00) | (0b10 << COM00);
-    TCCR0 |= _BV(CS00);
-    OCR0 = 0;
+    LED_ON(PWM_LED_G);
+    LED_ON(PWM_LED_R);
 
     lcd_init();
+#ifndef DCF_DEBUG
     lcd_font_init();
-
+#endif
     INIT_BIN(pbins, HOURS_PER_DAY);
     INIT_BIN(sbins, HOURS_PER_DAY);
     INIT_BIN(hbins, HOURS_PER_DAY);
@@ -439,36 +445,77 @@ static char const *get_cursor()
     return curs;
 }
 
+#ifdef DCF_DEBUG
 static void display_time(uint8_t tick_value)
 {
     if(tick_value)
-        OCR0 = 255;
+    {
+        LED_OFF(PWM_LED_G);
+        LED_ON(PWM_LED_R);
+    }
     else
-        OCR0 = 10;
+    {
+        LED_OFF(PWM_LED_R);
+        LED_ON(PWM_LED_G);
+    }
 
-    lcd_font_num(now.hour.digit.hi, 0);
-    lcd_font_num(now.hour.digit.lo, 3);
+    lcd_set_line(0);
+    lcd_putchar('0' + now.hour.digit.hi);
+    lcd_putchar('0' + now.hour.digit.lo);
+    lcd_putchar(':');
+    lcd_putchar('0' + now.prev_minute.digit.hi);
+    lcd_putchar('0' + now.prev_minute.digit.lo);
+    lcd_putchar(':');
+    lcd_putstr((now.second == 0xFF) ? "??" : bin2dec2(now.second));
+
+    lcd_set_line(1);
+    lcd_putstr("p");
+    lcd_putstr(bin2dec3(pbins.max - pbins.noise_max));
+    lcd_putstr("s");
+    lcd_putstr(bin2dec3(sbins.max - sbins.noise_max));
+    lcd_putstr("m");
+    lcd_putstr(bin2dec3(mbins.max - mbins.noise_max));
+    lcd_putstr("h");
+    lcd_putstr(bin2dec3(hbins.max - hbins.noise_max));
+}
+#else
+static void display_time(uint8_t tick_value)
+{
+#define DISP_OFFSET (0)
+
+    if(tick_value)
+    {
+        LED_OFF(PWM_LED_G);
+        LED_ON(PWM_LED_R);
+    }
+    else
+    {
+        LED_OFF(PWM_LED_R);
+        LED_ON(PWM_LED_G);
+    }
+    lcd_font_num(now.hour.digit.hi, DISP_OFFSET);
+    lcd_font_num(now.hour.digit.lo, DISP_OFFSET+3);
 
     if(now.second & 0x01)
     {
         lcd_set_position(6);
         lcd_putchar(0xA5);
-        lcd_set_position(LCD_COLS + 6);
+        lcd_set_position(LCD_COLS + DISP_OFFSET + 6);
         lcd_putchar(0xA5);
     } else {
         lcd_set_position(6);
         lcd_putchar(32);
-        lcd_set_position(LCD_COLS + 6);
+        lcd_set_position(LCD_COLS + DISP_OFFSET + 6);
         lcd_putchar(32);
     }
 
-    lcd_font_num(now.prev_minute.digit.hi, 7);
-    lcd_font_num(now.prev_minute.digit.lo, 10);
+    lcd_font_num(now.prev_minute.digit.hi, DISP_OFFSET + 7);
+    lcd_font_num(now.prev_minute.digit.lo, DISP_OFFSET + 10);
 
     lcd_set_position(LCD_COLS - 2);
     lcd_putstr((now.second == 0xFF) ? "??" : bin2dec2(now.second));
-
 }
+#endif
 
 static uint8_t get_second() {
     if (sbins.max - sbins.noise_max >= LOCK_TRESHOLD) {
@@ -710,6 +757,10 @@ void BSP_dispLocking(void) {
     lcd_set_line(1);
     lcd_putstr("phase: ");
     lcd_putstr(bin2dec3(pbins.max_index));
+#ifdef DCF_DEBUG
+    lcd_putstr(" ");
+    lcd_putstr(bin2dec3(pbins.max - pbins.noise_max));
+#endif
 }
 
 /*..........................................................................*/
@@ -738,6 +789,9 @@ uint8_t BSP_dispDecoding(uint8_t tick_data) {
 
     advance_second(&now);
     sync_mark_binning(tick_data);
+
+    if (sbins.max - sbins.noise_max <= LOCK_TRESHOLD)
+        return 0xFF;
 
     if (now.second == 0) {
 

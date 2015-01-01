@@ -103,7 +103,6 @@
     </state>
     <state name="SYNCING">
      <entry>BSP_dispClear();</entry>
-     <exit>BSP_dispClear();</exit>
      <tran trig="DCF_DATA">
       <choice target="../../../3">
        <guard>BSP_dispSyncing(Q_PAR(me)) != 0xFF</guard>
@@ -128,7 +127,6 @@
      </tran>
      <state_glyph node="56,10,33,19">
       <entry box="1,2,6,2"/>
-      <exit box="1,4,6,2"/>
      </state_glyph>
     </state>
     <state name="DECODING">
