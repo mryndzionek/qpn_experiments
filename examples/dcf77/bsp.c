@@ -8,18 +8,17 @@
 #include "lcd_font.h"
 #include "phase_detector.h"
 #include "decoder.h"
+#include "led_pulser.h"
 
-#define DCF_DEBUG
+//#define DCF_DEBUG
 
 #define IDLE_LED            (PD5)
 #define SIGNAL_LED          (PD0)
 #define PWM_LED_G           (PD3)
 #define PWM_LED_R           (PD4)
-#define PWM_LED             (PB3)
 #define DCF77_INPUT         (PD7)
 
 #define LED_MASK_PD         (_BV(IDLE_LED) | _BV(SIGNAL_LED) | _BV(PWM_LED_G) | _BV(PWM_LED_R))
-#define LED_MASK_PB         (_BV(PWM_LED))
 #define LED_OFF(num_)       (PORTD &= ~(1 << (num_)))
 #define LED_ON(num_)        (PORTD |= (1 << (num_)))
 #define LED_OFF_ALL()       (PORTD &= ~(LED_MASK_PD))
@@ -204,6 +203,8 @@ static minute_bins_t mbins;
 
 static time_data_t now = {.prev_minute.val = 0xFF};
 
+#define LED_PULSES      (50)
+
 static bcd_t int_to_bcd(const uint8_t value) {
     const uint8_t hi = value / 10;
 
@@ -344,9 +345,6 @@ void BSP_init(void) {
     DDRD = LED_MASK_PD;                    /* All PORTD pins are outputs for LEDs */
     LED_OFF_ALL();                                     /* turn off all LEDs */
 
-    TCCR0|= (1<<WGM00)| (1<<WGM01) | (1<<COM01) | (1<<CS00);
-    OCR0=0x30;
-    DDRB = LED_MASK_PB;
     LED_ON(PWM_LED_G);
     LED_ON(PWM_LED_R);
 
@@ -448,17 +446,6 @@ static char const *get_cursor()
 #ifdef DCF_DEBUG
 static void display_time(uint8_t tick_value)
 {
-    if(tick_value)
-    {
-        LED_OFF(PWM_LED_G);
-        LED_ON(PWM_LED_R);
-    }
-    else
-    {
-        LED_OFF(PWM_LED_R);
-        LED_ON(PWM_LED_G);
-    }
-
     lcd_set_line(0);
     lcd_putchar('0' + now.hour.digit.hi);
     lcd_putchar('0' + now.hour.digit.lo);
@@ -477,22 +464,14 @@ static void display_time(uint8_t tick_value)
     lcd_putstr(bin2dec3(mbins.max - mbins.noise_max));
     lcd_putstr("h");
     lcd_putstr(bin2dec3(hbins.max - hbins.noise_max));
+
+    QActive_post((QActive *)&AO_LEDPulser, LED_PULSE_SIG, tick_value);
 }
 #else
 static void display_time(uint8_t tick_value)
 {
 #define DISP_OFFSET (0)
 
-    if(tick_value)
-    {
-        LED_OFF(PWM_LED_G);
-        LED_ON(PWM_LED_R);
-    }
-    else
-    {
-        LED_OFF(PWM_LED_R);
-        LED_ON(PWM_LED_G);
-    }
     lcd_font_num(now.hour.digit.hi, DISP_OFFSET);
     lcd_font_num(now.hour.digit.lo, DISP_OFFSET+3);
 
@@ -514,6 +493,8 @@ static void display_time(uint8_t tick_value)
 
     lcd_set_position(LCD_COLS - 2);
     lcd_putstr((now.second == 0xFF) ? "??" : bin2dec2(now.second));
+
+    QActive_post((QActive *)&AO_LEDPulser, LED_PULSE_SIG, tick_value);
 }
 #endif
 
@@ -855,3 +836,20 @@ void BSP_dispClear(void) {
     lcd_clear();
 }
 
+/*..........................................................................*/
+void BSP_LEDPulse(uint8_t data) {
+
+    if(data == 1)
+    {
+        LED_OFF(PWM_LED_G);
+        LED_ON(PWM_LED_R);
+    }
+    else if(data == 0)
+    {
+        LED_OFF(PWM_LED_R);
+        LED_ON(PWM_LED_G);
+    } else {
+        LED_ON(PWM_LED_R);
+        LED_ON(PWM_LED_G);
+    }
+}

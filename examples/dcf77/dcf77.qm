@@ -155,8 +155,42 @@
     <state_diagram size="106,63"/>
    </statechart>
   </class>
+  <class name="LEDPulser" superclass="qpn::QMActive">
+   <statechart>
+    <initial target="../1">
+     <initial_glyph conn="9,5,5,0,16,5">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="IDLE">
+     <tran trig="LED_PULSE" target="../../2">
+      <tran_glyph conn="29,10,0,0,-5,39,5">
+       <action box="4,-5,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="11,10,32,24"/>
+    </state>
+    <state name="ACTIVE">
+     <entry>QActive_arm((QActive *)me, LED_PULSE_MS);
+BSP_LEDPulse(Q_PAR(me));</entry>
+     <exit>QActive_disarm((QActive *)me);
+BSP_LEDPulse(3);</exit>
+     <tran trig="Q_TIMEOUT" target="../../1">
+      <tran_glyph conn="93,24,1,1,-50">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="58,10,35,24">
+      <entry box="1,2,6,2"/>
+      <exit box="1,4,6,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="102,51"/>
+   </statechart>
+  </class>
   <attribute name="AO_PhaseDetector" type="QMActive *const" visibility="0x00" properties="0x00"/>
   <attribute name="AO_Decoder" type="QMActive *const" visibility="0x00" properties="0x00"/>
+  <attribute name="AO_LEDPulser" type="QMActive *const" visibility="0x00" properties="0x00"/>
   <operation name="PhaseDetector_ctor" type="void" visibility="0x00" properties="0x00">
    <documentation>constructor</documentation>
    <code>QMActive_ctor(&amp;AO_PhaseDetector.super, Q_STATE_CAST(&amp;PhaseDetector_initial));</code>
@@ -164,6 +198,10 @@
   <operation name="Decoder_ctor" type="void" visibility="0x00" properties="0x00">
    <documentation>constructor</documentation>
    <code>QMActive_ctor(&amp;AO_Decoder.super, Q_STATE_CAST(&amp;Decoder_initial));</code>
+  </operation>
+  <operation name="LEDPulser_ctor" type="void" visibility="0x00" properties="0x00">
+   <documentation>constructor</documentation>
+   <code>QMActive_ctor(&amp;AO_LEDPulser.super, Q_STATE_CAST(&amp;LEDPulser_initial));</code>
   </operation>
   <directory name=".">
    <file name="phase_detector.h">
@@ -173,7 +211,8 @@
 enum PhaseDetectorSignals {
     SAMPLE_READY_SIG = Q_USER_SIG,
     PHASE_UPDATE_SIG,
-    DCF_DATA_SIG
+    DCF_DATA_SIG,
+    LED_PULSE_SIG
 };
 
 // active objects ................................................*/
@@ -209,6 +248,7 @@ $define(AOs::PhaseDetector)</text>
 #include &quot;bsp.h&quot;                /* Board Support Package (BSP) */
 #include &quot;phase_detector.h&quot;
 #include &quot;decoder.h&quot;
+#include &quot;led_pulser.h&quot;
 
 /*..........................................................................*/
 static QEvt l_dcf77Queue[2];
@@ -216,6 +256,7 @@ static QEvt l_dcf77Queue[2];
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
     { (QActive *)0,           (QEvt *)0,      0                         },
+    { (QActive *)&amp;AO_LEDPulser, l_dcf77Queue, Q_DIM(l_dcf77Queue)       },
     { (QActive *)&amp;AO_Decoder, l_dcf77Queue, Q_DIM(l_dcf77Queue)         },
     { (QActive *)&amp;AO_PhaseDetector, l_dcf77Queue, Q_DIM(l_dcf77Queue)   },
 };
@@ -228,6 +269,7 @@ int main(void)
 {
     PhaseDetector_ctor();    /* instantiate the PhaseDetector AO */
     Decoder_ctor();
+    LEDPulser_ctor();
     BSP_init();              /* initialize the board */
 
     return QF_run();         /* transfer control to QF-nano */
@@ -261,6 +303,37 @@ Decoder AO_Decoder;
 /* Blink class definition --------------------------------------------------*/
 $define(AOs::Decoder_ctor)
 $define(AOs::Decoder)</text>
+   </file>
+   <file name="led_pulser.h">
+    <text>#ifndef __LED_PULSER_H__
+#define __LED_PULSER_H__
+
+// active objects ................................................*/
+$declare(AOs::LEDPulser_ctor)
+
+extern struct LEDPulser AO_LEDPulser;
+
+#endif /* __LED_PULSER_H__ */</text>
+   </file>
+   <file name="led_pulser.c">
+    <text>#include &quot;qpn_port.h&quot;
+#include &quot;bsp.h&quot;
+#include &quot;led_pulser.h&quot;
+#include &quot;phase_detector.h&quot;
+
+/*Q_DEFINE_THIS_FILE*/
+
+#define LED_PULSE_MS             (BSP_TICKS_PER_SEC / 2)
+
+/* LEDPulser class declaration -----------------------------------------------*/
+$declare(AOs::LEDPulser)
+
+/* Global objects ----------------------------------------------------------*/
+LEDPulser AO_LEDPulser;
+
+/* Blink class definition --------------------------------------------------*/
+$define(AOs::LEDPulser_ctor)
+$define(AOs::LEDPulser)</text>
    </file>
   </directory>
  </package>

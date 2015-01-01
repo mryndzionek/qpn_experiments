@@ -19,6 +19,7 @@
 #include "bsp.h"                /* Board Support Package (BSP) */
 #include "phase_detector.h"
 #include "decoder.h"
+#include "led_pulser.h"
 
 /*..........................................................................*/
 static QEvt l_dcf77Queue[2];
@@ -26,6 +27,7 @@ static QEvt l_dcf77Queue[2];
 /* QF_active[] array defines all active object control blocks --------------*/
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
     { (QActive *)0,           (QEvt *)0,      0                         },
+    { (QActive *)&AO_LEDPulser, l_dcf77Queue, Q_DIM(l_dcf77Queue)       },
     { (QActive *)&AO_Decoder, l_dcf77Queue, Q_DIM(l_dcf77Queue)         },
     { (QActive *)&AO_PhaseDetector, l_dcf77Queue, Q_DIM(l_dcf77Queue)   },
 };
@@ -38,6 +40,7 @@ int main(void)
 {
     PhaseDetector_ctor();    /* instantiate the PhaseDetector AO */
     Decoder_ctor();
+    LEDPulser_ctor();
     BSP_init();              /* initialize the board */
 
     return QF_run();         /* transfer control to QF-nano */

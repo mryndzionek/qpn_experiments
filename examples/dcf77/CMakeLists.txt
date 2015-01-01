@@ -6,6 +6,7 @@ add_avr_executable(
     main.c
     phase_detector.c
     decoder.c
+    led_pulser.c
     bsp.c
     ${CMAKE_SOURCE_DIR}/lcd/lcd.c
     ${CMAKE_SOURCE_DIR}/lcd/lcd_font.c

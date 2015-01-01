@@ -17,7 +17,7 @@ void BSP_dispLocking(void);
 uint8_t BSP_dispSyncing(uint8_t data);
 uint8_t BSP_dispDecoding(uint8_t data);
 void BSP_dispClear(void);
-
+void BSP_LEDPulse(uint8_t data);
 #define BSP_showState(state_) ((void)0)
 
 #endif                                                             /* bsp_h */
