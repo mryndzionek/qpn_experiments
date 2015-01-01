@@ -10,7 +10,7 @@
 #include "decoder.h"
 #include "led_pulser.h"
 
-//#define DCF_DEBUG
+#define DCF_DEBUG
 
 #define IDLE_LED            (PD5)
 #define SIGNAL_LED          (PD0)
@@ -36,6 +36,10 @@
 #define HOURS_PER_DAY       (24)
 #define SECONDS_PER_MINUTE  (60)
 #define MINUTES_PER_HOUR    (60)
+#define DAYS_PER_MONTH      (31)
+#define WEEKDAYS_PER_WEEK   (7)
+#define MONTHS_PER_YEAR     (12)
+#define YEARS_PER_CENTURY   (100)
 #define SYNC_MARK           (0)
 #define UNDEFINED           (1)
 #define SHORT_TICK          (2)
@@ -65,13 +69,13 @@
     } \
 } \
 
-#define GET_TIME_VALUE_DECL(_name, _size, _offset) \
+#define GET_TIME_VALUE_DECL(_name, _size) \
         bcd_t get_## _name(const _name ## _bins_t *bins) { \
     \
     const uint8_t threshold = 2; \
     \
     if (bins->max - bins->noise_max >= threshold) { \
-        return int_to_bcd((bins->max_index + bins->tick + 1) % _size + _offset); \
+        return int_to_bcd((bins->max_index + bins->tick + 1) % _size); \
     } else { \
         bcd_t undefined; \
         undefined.val = 0xff; \
@@ -152,6 +156,43 @@ typedef union {
     uint8_t val;
 } bcd_t;
 
+
+typedef struct {
+    uint8_t data[YEARS_PER_CENTURY];
+    uint8_t tick;
+
+    uint32_t noise_max;
+    uint32_t max;
+    uint8_t max_index;
+} year_bins_t;
+
+typedef struct {
+    uint8_t data[MONTHS_PER_YEAR];
+    uint8_t tick;
+
+    uint32_t noise_max;
+    uint32_t max;
+    uint8_t max_index;
+} month_bins_t;
+
+typedef struct {
+    uint8_t data[WEEKDAYS_PER_WEEK];
+    uint8_t tick;
+
+    uint32_t noise_max;
+    uint32_t max;
+    uint8_t max_index;
+} weekday_bins_t;
+
+typedef struct {
+    uint8_t data[DAYS_PER_MONTH];
+    uint8_t tick;
+
+    uint32_t noise_max;
+    uint32_t max;
+    uint8_t max_index;
+} day_bins_t;
+
 typedef struct {
     uint8_t data[MINUTES_PER_HOUR];
     uint8_t tick;
@@ -189,8 +230,13 @@ typedef struct {
 } sync_bins_t;
 
 typedef struct {
-    bcd_t hour;     // 0..23
-    bcd_t minute;   // 0..59
+    bcd_t hour;
+    bcd_t minute;
+    bcd_t day;
+    bcd_t weekday;
+    bcd_t month;
+    bcd_t year;
+
     bcd_t prev_minute;
     uint8_t second;      // 0..60
 
@@ -200,6 +246,10 @@ static phase_bins_t pbins;
 static sync_bins_t sbins;
 static hour_bins_t hbins;
 static minute_bins_t mbins;
+static day_bins_t dbins;
+static weekday_bins_t wbins;
+static month_bins_t mobins;
+static year_bins_t ybins;
 
 static time_data_t now = {.prev_minute.val = 0xFF};
 
@@ -295,15 +345,35 @@ static void advance_second(time_data_t *now) {
 
 static COMPUTE_MAX_INDEX_DECL(sync, SECONDS_PER_MINUTE);
 
-static GET_TIME_VALUE_DECL(hour, HOURS_PER_DAY, 0);
+static GET_TIME_VALUE_DECL(hour, HOURS_PER_DAY);
 static COMPUTE_MAX_INDEX_DECL(hour, HOURS_PER_DAY);
 static HAMMING_BINNING_DECL(hour, 24, HOURS_PER_DAY, 1);
 static ADVANCE_TICK_DECL(hour, HOURS_PER_DAY);
 
-static GET_TIME_VALUE_DECL(minute, MINUTES_PER_HOUR, 0);
+static GET_TIME_VALUE_DECL(minute, MINUTES_PER_HOUR);
 static COMPUTE_MAX_INDEX_DECL(minute, MINUTES_PER_HOUR);
 static HAMMING_BINNING_DECL(minute, MINUTES_PER_HOUR, 8, 1);
 static ADVANCE_TICK_DECL(minute, MINUTES_PER_HOUR);
+
+static GET_TIME_VALUE_DECL(day, DAYS_PER_MONTH);
+static COMPUTE_MAX_INDEX_DECL(day, DAYS_PER_MONTH);
+static HAMMING_BINNING_DECL(day, DAYS_PER_MONTH, 6, 0);
+static ADVANCE_TICK_DECL(day, DAYS_PER_MONTH);
+
+static GET_TIME_VALUE_DECL(weekday, WEEKDAYS_PER_WEEK);
+static COMPUTE_MAX_INDEX_DECL(weekday, WEEKDAYS_PER_WEEK);
+static HAMMING_BINNING_DECL(weekday, WEEKDAYS_PER_WEEK, 3, 0);
+static ADVANCE_TICK_DECL(weekday, WEEKDAYS_PER_WEEK);
+
+static GET_TIME_VALUE_DECL(month, MONTHS_PER_YEAR);
+static COMPUTE_MAX_INDEX_DECL(month, MONTHS_PER_YEAR);
+static HAMMING_BINNING_DECL(month, MONTHS_PER_YEAR, 5, 0);
+static ADVANCE_TICK_DECL(month, MONTHS_PER_YEAR);
+
+static GET_TIME_VALUE_DECL(year, YEARS_PER_CENTURY);
+static COMPUTE_MAX_INDEX_DECL(year, YEARS_PER_CENTURY);
+static HAMMING_BINNING_DECL(year, YEARS_PER_CENTURY, 8, 0);
+static ADVANCE_TICK_DECL(year, YEARS_PER_CENTURY);
 
 /*..........................................................................*/
 ISR(TIMER1_COMPA_vect) {
@@ -454,6 +524,14 @@ static void display_time(uint8_t tick_value)
     lcd_putchar('0' + now.prev_minute.digit.lo);
     lcd_putchar(':');
     lcd_putstr((now.second == 0xFF) ? "??" : bin2dec2(now.second));
+    lcd_putchar('0' + now.day.digit.hi);
+    lcd_putchar('0' + now.day.digit.lo);
+//    lcd_putchar('0' + now.weekday.digit.hi);
+//    lcd_putchar('0' + now.weekday.digit.lo);
+    lcd_putchar('0' + now.month.digit.hi);
+    lcd_putchar('0' + now.month.digit.lo);
+    lcd_putchar('0' + now.year.digit.hi);
+    lcd_putchar('0' + now.year.digit.lo);
 
     lcd_set_line(1);
     lcd_putstr("p");
@@ -767,6 +845,10 @@ uint8_t BSP_dispDecoding(uint8_t tick_data) {
     now.second = get_second(&sbins);
     now.hour = get_hour(&hbins);
     now.minute = get_minute(&mbins);
+    now.day = get_day(&dbins);
+    now.weekday = get_weekday(&wbins);
+    now.month = get_month(&mobins);
+    now.year = get_year(&ybins);
 
     advance_second(&now);
     sync_mark_binning(tick_data);
@@ -777,10 +859,24 @@ uint8_t BSP_dispDecoding(uint8_t tick_data) {
     if (now.second == 0) {
 
         advance_minute(&mbins);
-        if (now.minute.val == 0x00) {
+        if (now.minute.val == 0x01) {
 
             // "while" takes automatically care of timezone change
             while (get_hour(&hbins).val <= 0x23 && get_hour(&hbins).val != now.hour.val) { advance_hour(&hbins); }
+
+            if (now.hour.val == 0x00) {
+                if (get_weekday(&wbins).val <= 0x07) { advance_weekday(&wbins); }
+
+                // "while" takes automatically care if different month lengths
+                while (get_day(&dbins).val <= 0x31 && get_day(&dbins).val != now.day.val) { advance_day(&dbins); }
+
+                if (now.day.val == 0x01) {
+                    if (get_month(&mobins).val <= 0x12) { advance_month(&mobins); }
+                    if (now.month.val == 0x01) {
+                        if (now.year.val <= 0x99) { advance_year(&ybins); }
+                    }
+                }
+            }
         }
     }
 
@@ -819,6 +915,66 @@ uint8_t BSP_dispDecoding(uint8_t tick_data) {
     // fall through on purpose
     default: minute_data.val = 0;
 
+    }
+
+    static bcd_t day_data;
+
+    switch (now.second) {
+    case 36: day_data.val +=      tick_value; break;
+    case 37: day_data.val +=  0x2*tick_value; break;
+    case 38: day_data.val +=  0x4*tick_value; break;
+    case 39: day_data.val +=  0x8*tick_value; break;
+    case 40: day_data.val += 0x10*tick_value; break;
+    case 41: day_data.val += 0x20*tick_value;
+    hamming_day_binning(&dbins, day_data); break;
+    case 42: compute_max_day_index(&dbins);
+    // fall through on purpose
+    default: day_data.val = 0;
+    }
+
+    static bcd_t weekday_data;
+
+    switch (now.second) {
+    case 42: weekday_data.val +=      tick_value; break;
+    case 43: weekday_data.val +=  0x2*tick_value; break;
+    case 44: weekday_data.val +=  0x4*tick_value;
+    hamming_weekday_binning(&wbins, weekday_data); break;
+    case 45: compute_max_weekday_index(&wbins);
+    // fall through on purpose
+    default: weekday_data.val = 0;
+    }
+
+    static bcd_t month_data;
+
+    switch (now.second) {
+    case 45: month_data.val +=      tick_value; break;
+    case 46: month_data.val +=  0x2*tick_value; break;
+    case 47: month_data.val +=  0x4*tick_value; break;
+    case 48: month_data.val +=  0x8*tick_value; break;
+    case 49: month_data.val += 0x10*tick_value;
+    hamming_month_binning(&mobins, month_data); break;
+
+    case 50: compute_max_month_index(&mobins);
+    // fall through on purpose
+    default: month_data.val = 0;
+    }
+
+    static bcd_t year_data;
+
+    switch (now.second) {
+    case 50: year_data.val +=      tick_value; break;
+    case 51: year_data.val +=  0x2*tick_value; break;
+    case 52: year_data.val +=  0x4*tick_value; break;
+    case 53: year_data.val +=  0x8*tick_value; break;
+    case 54: year_data.val += 0x10*tick_value; break;
+    case 55: year_data.val += 0x20*tick_value; break;
+    case 56: year_data.val += 0x20*tick_value; break;
+    case 57: year_data.val += 0x80*tick_value;
+    hamming_year_binning(&ybins, year_data); break;
+
+    case 58: compute_max_year_index(&ybins);
+    // fall through on purpose
+    default: year_data.val = 0;
     }
 
     display_time(tick_value);
