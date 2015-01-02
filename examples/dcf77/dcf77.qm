@@ -47,7 +47,7 @@
      <tran trig="SAMPLE_READY">
       <action>BSP_binning(Q_PAR(me));
 BSP_decoding(Q_PAR(me));</action>
-      <tran_glyph conn="94,24,1,-1,-23">
+      <tran_glyph conn="104,24,1,-1,-33">
        <action box="-14,-2,13,2"/>
       </tran_glyph>
      </tran>
@@ -65,16 +65,16 @@ BSP_decoding(Q_PAR(me));</action>
         <action box="0,2,10,2"/>
        </choice_glyph>
       </choice>
-      <tran_glyph conn="94,15,1,-1,-18">
+      <tran_glyph conn="104,15,1,-1,-28">
        <action box="-13,-2,10,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="56,7,38,23">
+     <state_glyph node="56,7,48,24">
       <entry box="1,2,6,2"/>
       <exit box="1,4,6,2"/>
      </state_glyph>
     </state>
-    <state_diagram size="101,53"/>
+    <state_diagram size="111,71"/>
    </statechart>
   </class>
   <class name="Decoder" superclass="qpn::QMActive">
@@ -134,6 +134,7 @@ BSP_decoding(Q_PAR(me));</action>
      <tran trig="DCF_DATA">
       <choice>
        <guard>else</guard>
+       <action>BSP_dispTime();</action>
        <choice_glyph conn="49,49,5,-1,-9">
         <action box="-8,0,10,2"/>
        </choice_glyph>
@@ -144,15 +145,70 @@ BSP_decoding(Q_PAR(me));</action>
         <action box="-10,-5,10,2"/>
        </choice_glyph>
       </choice>
-      <tran_glyph conn="59,54,1,-1,-10,-5">
+      <tran_glyph conn="96,54,1,-1,-47,-5">
        <action box="-9,-2,10,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="29,41,30,18">
+     <tran trig="BUTTON_PRESSED" target="../2">
+      <tran_glyph conn="29,57,3,0,16,4">
+       <action box="0,-2,14,2"/>
+      </tran_glyph>
+     </tran>
+     <state name="DATE">
+      <entry>BSP_dispDate();
+QActive_arm((QActive *)me, DATE_DISP_MS);</entry>
+      <exit>QActive_disarm((QActive *)me);</exit>
+      <tran trig="Q_TIMEOUT" target="../../3">
+       <tran_glyph conn="48,61,0,0,-4,25,4">
+        <action box="0,-2,10,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="DCF_DATA">
+       <action>BSP_dispDecoding(Q_PAR(me));</action>
+       <tran_glyph conn="48,73,2,-1,-5,7">
+        <action box="0,-2,12,3"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="CATCH_ALL">
+       <tran_glyph conn="38,73,2,-1,-5,5">
+        <action box="0,-2,10,2"/>
+       </tran_glyph>
+      </tran>
+      <state_glyph node="34,61,23,12">
+       <entry box="1,2,6,2"/>
+       <exit box="1,4,6,2"/>
+      </state_glyph>
+     </state>
+     <state name="YEAR">
+      <entry>BSP_dispYear();
+QActive_arm((QActive *)me, DATE_DISP_MS);</entry>
+      <exit>QActive_disarm((QActive *)me);</exit>
+      <tran trig="Q_TIMEOUT" target="../..">
+       <tran_glyph conn="87,66,1,1,9">
+        <action box="0,-2,10,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="DCF_DATA">
+       <action>BSP_dispDecoding(Q_PAR(me));</action>
+       <tran_glyph conn="77,74,2,-1,-6,8">
+        <action box="2,-4,10,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="CATCH_ALL">
+       <tran_glyph conn="67,74,2,-1,-6,7">
+        <action box="0,-2,10,2"/>
+       </tran_glyph>
+      </tran>
+      <state_glyph node="63,61,24,13">
+       <entry box="1,2,6,2"/>
+       <exit box="1,4,6,2"/>
+      </state_glyph>
+     </state>
+     <state_glyph node="29,41,67,36">
       <entry box="1,2,6,2"/>
      </state_glyph>
     </state>
-    <state_diagram size="106,63"/>
+    <state_diagram size="109,83"/>
    </statechart>
   </class>
   <class name="LEDPulser" superclass="qpn::QMActive">
@@ -212,7 +268,8 @@ enum PhaseDetectorSignals {
     SAMPLE_READY_SIG = Q_USER_SIG,
     PHASE_UPDATE_SIG,
     DCF_DATA_SIG,
-    LED_PULSE_SIG
+    LED_PULSE_SIG,
+    BUTTON_PRESSED_SIG
 };
 
 // active objects ................................................*/
@@ -293,6 +350,8 @@ extern struct Decoder AO_Decoder;
 #include &quot;phase_detector.h&quot;
 
 /*Q_DEFINE_THIS_FILE*/
+
+#define DATE_DISP_MS      (BSP_TICKS_PER_SEC * 2)
 
 /* PhaseDetector class declaration -----------------------------------------------*/
 $declare(AOs::Decoder)

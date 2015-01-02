@@ -16,6 +16,7 @@
 #define SIGNAL_LED          (PD0)
 #define PWM_LED_G           (PD3)
 #define PWM_LED_R           (PD4)
+#define BUTTON              (PD6)
 #define DCF77_INPUT         (PD7)
 
 #define LED_MASK_PD         (_BV(IDLE_LED) | _BV(SIGNAL_LED) | _BV(PWM_LED_G) | _BV(PWM_LED_R))
@@ -45,6 +46,8 @@
 #define SHORT_TICK          (2)
 #define LONG_TICK           (3)
 #define LOCK_TRESHOLD       (12)
+
+#define DISP_OFFSET (0)
 
 #define BOUNDED_INCREMENT(_val, n) if (_val >= 255 - n) { _val = 255; } else { _val += n; }
 #define BOUNDED_DECREMENT(_val, n) if (_val <= n) { _val = 0; } else { _val -= n; }
@@ -242,6 +245,16 @@ typedef struct {
 
 } time_data_t;
 
+static const char *days[] = {
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun"
+};
+
 static phase_bins_t pbins;
 static sync_bins_t sbins;
 static hour_bins_t hbins;
@@ -381,11 +394,46 @@ ISR(TIMER1_COMPA_vect) {
      * interrupt is automatically cleared in hardware when the ISR runs.
      */
 
+#define DEBOUNCE_MS     (50)
+
     static uint8_t tick = 0;
     static uint8_t curr_sample = 0;
     static uint8_t average = 0;
+    static uint8_t button_cnt = 0;
+    static uint8_t b_pressed = 0;
 
     QK_ISR_ENTRY();                     /* inform QK kernel about ISR entry */
+
+    switch(b_pressed)
+    {
+    case 1:
+        if(PIND & _BV(BUTTON))
+        {
+            if(button_cnt > 0)
+                --button_cnt;
+            else {
+                b_pressed = 0;
+            }
+        } else
+            if(button_cnt < DEBOUNCE_MS)
+                ++button_cnt;
+        break;
+
+    default:
+    case 0:
+        if(!(PIND & _BV(BUTTON)))
+        {
+            if(button_cnt < DEBOUNCE_MS)
+                ++button_cnt;
+            else {
+                b_pressed = 1;
+                QACTIVE_POST_ISR((QActive *)&AO_Decoder, BUTTON_PRESSED_SIG, 0);
+            }
+        } else
+            if(button_cnt > 0)
+                --button_cnt;
+        break;
+    }
 
     if(PIND & _BV(DCF77_INPUT))
         average++;
@@ -417,6 +465,9 @@ void BSP_init(void) {
 
     LED_ON(PWM_LED_G);
     LED_ON(PWM_LED_R);
+
+    LED_ON(DCF77_INPUT);
+    LED_ON(BUTTON);
 
     lcd_init();
 #ifndef DCF_DEBUG
@@ -512,69 +563,6 @@ static char const *get_cursor()
 
     return curs;
 }
-
-#ifdef DCF_DEBUG
-static void display_time(uint8_t tick_value)
-{
-    lcd_set_line(0);
-    lcd_putchar('0' + now.hour.digit.hi);
-    lcd_putchar('0' + now.hour.digit.lo);
-    lcd_putchar(':');
-    lcd_putchar('0' + now.prev_minute.digit.hi);
-    lcd_putchar('0' + now.prev_minute.digit.lo);
-    lcd_putchar(':');
-    lcd_putstr((now.second == 0xFF) ? "??" : bin2dec2(now.second));
-    lcd_putchar('0' + now.day.digit.hi);
-    lcd_putchar('0' + now.day.digit.lo);
-//    lcd_putchar('0' + now.weekday.digit.hi);
-//    lcd_putchar('0' + now.weekday.digit.lo);
-    lcd_putchar('0' + now.month.digit.hi);
-    lcd_putchar('0' + now.month.digit.lo);
-    lcd_putchar('0' + now.year.digit.hi);
-    lcd_putchar('0' + now.year.digit.lo);
-
-    lcd_set_line(1);
-    lcd_putstr("p");
-    lcd_putstr(bin2dec3(pbins.max - pbins.noise_max));
-    lcd_putstr("s");
-    lcd_putstr(bin2dec3(sbins.max - sbins.noise_max));
-    lcd_putstr("m");
-    lcd_putstr(bin2dec3(mbins.max - mbins.noise_max));
-    lcd_putstr("h");
-    lcd_putstr(bin2dec3(hbins.max - hbins.noise_max));
-
-    QActive_post((QActive *)&AO_LEDPulser, LED_PULSE_SIG, tick_value);
-}
-#else
-static void display_time(uint8_t tick_value)
-{
-#define DISP_OFFSET (0)
-
-    lcd_font_num(now.hour.digit.hi, DISP_OFFSET);
-    lcd_font_num(now.hour.digit.lo, DISP_OFFSET+3);
-
-    if(now.second & 0x01)
-    {
-        lcd_set_position(6);
-        lcd_putchar(0xA5);
-        lcd_set_position(LCD_COLS + DISP_OFFSET + 6);
-        lcd_putchar(0xA5);
-    } else {
-        lcd_set_position(6);
-        lcd_putchar(32);
-        lcd_set_position(LCD_COLS + DISP_OFFSET + 6);
-        lcd_putchar(32);
-    }
-
-    lcd_font_num(now.prev_minute.digit.hi, DISP_OFFSET + 7);
-    lcd_font_num(now.prev_minute.digit.lo, DISP_OFFSET + 10);
-
-    lcd_set_position(LCD_COLS - 2);
-    lcd_putstr((now.second == 0xFF) ? "??" : bin2dec2(now.second));
-
-    QActive_post((QActive *)&AO_LEDPulser, LED_PULSE_SIG, tick_value);
-}
-#endif
 
 static uint8_t get_second() {
     if (sbins.max - sbins.noise_max >= LOCK_TRESHOLD) {
@@ -979,7 +967,7 @@ uint8_t BSP_dispDecoding(uint8_t tick_data) {
     default: year_data.val = 0;
     }
 
-    display_time(tick_value);
+    QActive_post((QActive *)&AO_LEDPulser, LED_PULSE_SIG, tick_value);
 
     return 0;
 
@@ -1006,4 +994,91 @@ void BSP_LEDPulse(uint8_t data) {
         LED_ON(PWM_LED_R);
         LED_ON(PWM_LED_G);
     }
+}
+
+/*..........................................................................*/
+void BSP_dispTime(void) {
+
+#ifdef DCF_DEBUG
+
+    lcd_set_line(0);
+    lcd_putchar('0' + now.hour.digit.hi);
+    lcd_putchar('0' + now.hour.digit.lo);
+    lcd_putchar(':');
+    lcd_putchar('0' + now.prev_minute.digit.hi);
+    lcd_putchar('0' + now.prev_minute.digit.lo);
+    lcd_putchar(':');
+    lcd_putstr((now.second == 0xFF) ? "??" : bin2dec2(now.second));
+    lcd_putchar('0' + now.day.digit.hi);
+    lcd_putchar('0' + now.day.digit.lo);
+    //    lcd_putchar('0' + now.weekday.digit.hi);
+    //    lcd_putchar('0' + now.weekday.digit.lo);
+    lcd_putchar('0' + now.month.digit.hi);
+    lcd_putchar('0' + now.month.digit.lo);
+    lcd_putchar('0' + now.year.digit.hi);
+    lcd_putchar('0' + now.year.digit.lo);
+
+    lcd_set_line(1);
+    lcd_putstr("p");
+    lcd_putstr(bin2dec3(pbins.max - pbins.noise_max));
+    lcd_putstr("s");
+    lcd_putstr(bin2dec3(sbins.max - sbins.noise_max));
+    lcd_putstr("m");
+    lcd_putstr(bin2dec3(mbins.max - mbins.noise_max));
+    lcd_putstr("h");
+    lcd_putstr(bin2dec3(hbins.max - hbins.noise_max));
+
+#else
+    lcd_font_num(now.hour.digit.hi, DISP_OFFSET);
+    lcd_font_num(now.hour.digit.lo, DISP_OFFSET+3);
+
+    if(now.second & 0x01)
+    {
+        lcd_set_position(6);
+        lcd_putchar(0xA5);
+        lcd_set_position(LCD_COLS + DISP_OFFSET + 6);
+        lcd_putchar(0xA5);
+    } else {
+        lcd_set_position(6);
+        lcd_putchar(32);
+        lcd_set_position(LCD_COLS + DISP_OFFSET + 6);
+        lcd_putchar(32);
+    }
+
+    lcd_font_num(now.prev_minute.digit.hi, DISP_OFFSET + 7);
+    lcd_font_num(now.prev_minute.digit.lo, DISP_OFFSET + 10);
+
+    lcd_set_position(LCD_COLS - 2);
+    lcd_putstr((now.second == 0xFF) ? "??" : bin2dec2(now.second));
+#endif
+
+
+}
+
+/*..........................................................................*/
+void BSP_dispDate(void) {
+
+    lcd_clear();
+    lcd_font_num(now.day.digit.hi, DISP_OFFSET);
+    lcd_font_num(now.day.digit.lo, DISP_OFFSET+3);
+
+    lcd_font_num('-', DISP_OFFSET+6);
+
+    lcd_font_num(now.month.digit.hi, DISP_OFFSET+7);
+    lcd_font_num(now.month.digit.lo, DISP_OFFSET+10);
+
+    lcd_set_position(LCD_COLS-3);
+    lcd_putstr((now.weekday.digit.lo - 1 < 7) ? days[(now.weekday.digit.lo - 1)] : "XXX");
+
+}
+
+/*..........................................................................*/
+void BSP_dispYear(void) {
+
+    lcd_clear();
+    lcd_font_num(2, DISP_OFFSET);
+    lcd_font_num(0, DISP_OFFSET+3);
+
+    lcd_font_num(now.year.digit.hi, DISP_OFFSET+6);
+    lcd_font_num(now.year.digit.lo, DISP_OFFSET+9);
 }

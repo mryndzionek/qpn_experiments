@@ -219,6 +219,12 @@ static void custom9(int col)
     lcd_putchar(1);
 }
 
+static void custom_minus(int col)
+{
+    lcd_set_position(col);
+    lcd_putchar(6);
+}
+
 static void custom_undefined(int col)
 {
     lcd_set_position(col);
@@ -284,6 +290,10 @@ void lcd_font_num(int value, int col) {
 
     case 9:
         custom9(col);
+        break;
+
+    case '-':
+        custom_minus(col);
         break;
 
     default:

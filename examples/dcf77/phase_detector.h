@@ -22,7 +22,8 @@ enum PhaseDetectorSignals {
     SAMPLE_READY_SIG = Q_USER_SIG,
     PHASE_UPDATE_SIG,
     DCF_DATA_SIG,
-    LED_PULSE_SIG
+    LED_PULSE_SIG,
+    BUTTON_PRESSED_SIG
 };
 
 // active objects ................................................*/
