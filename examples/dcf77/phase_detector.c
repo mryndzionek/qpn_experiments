@@ -149,13 +149,13 @@ static QState PhaseDetector_LOCKED(PhaseDetector * const me) {
     switch (Q_SIG(me)) {
         /* ${AOs::PhaseDetector::SM::LOCKED::SAMPLE_READY} */
         case SAMPLE_READY_SIG: {
+            BSP_binning(Q_PAR(me));
             BSP_decoding(Q_PAR(me));
             status_ = QM_HANDLED();
             break;
         }
         /* ${AOs::PhaseDetector::SM::LOCKED::Q_TIMEOUT} */
         case Q_TIMEOUT_SIG: {
-            BSP_binning(Q_PAR(me));
             /* ${AOs::PhaseDetector::SM::LOCKED::Q_TIMEOUT::[BSP_convolution~} */
             if (BSP_convolution()) {
                 QActive_arm((QActive *)me, PHASE_UPDATE_MS);

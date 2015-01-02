@@ -45,13 +45,13 @@
      <entry>QActive_arm((QActive *)me, PHASE_UPDATE_MS);</entry>
      <exit>QActive_disarm((QActive *)me);</exit>
      <tran trig="SAMPLE_READY">
-      <action>BSP_decoding(Q_PAR(me));</action>
+      <action>BSP_binning(Q_PAR(me));
+BSP_decoding(Q_PAR(me));</action>
       <tran_glyph conn="94,24,1,-1,-23">
        <action box="-14,-2,13,2"/>
       </tran_glyph>
      </tran>
      <tran trig="Q_TIMEOUT">
-      <action>BSP_binning(Q_PAR(me));</action>
       <choice>
        <guard>BSP_convolution()</guard>
        <action>QActive_arm((QActive *)me, PHASE_UPDATE_MS);</action>

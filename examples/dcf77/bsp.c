@@ -10,7 +10,7 @@
 #include "decoder.h"
 #include "led_pulser.h"
 
-#define DCF_DEBUG
+//define DCF_DEBUG
 
 #define IDLE_LED            (PD5)
 #define SIGNAL_LED          (PD0)
@@ -858,8 +858,10 @@ uint8_t BSP_dispDecoding(uint8_t tick_data) {
 
     if (now.second == 0) {
 
+        now.prev_minute = now.minute;
         advance_minute(&mbins);
-        if (now.minute.val == 0x01) {
+
+        if (now.prev_minute.val == 0x00) {
 
             // "while" takes automatically care of timezone change
             while (get_hour(&hbins).val <= 0x23 && get_hour(&hbins).val != now.hour.val) { advance_hour(&hbins); }
@@ -978,10 +980,6 @@ uint8_t BSP_dispDecoding(uint8_t tick_data) {
     }
 
     display_time(tick_value);
-
-    if (now.second == 59) {
-        now.prev_minute = now.minute;
-    }
 
     return 0;
 
