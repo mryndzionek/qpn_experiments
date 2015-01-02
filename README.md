@@ -33,7 +33,8 @@ Build instructions
 		cd qpn_experiments
 		mkdir build
 		cd build
-		cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-avr-gcc.make -DCMAKE_BUILD_TYPE=MinSizeRel ..
+		cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-avr-gcc.make \
+            -DCMAKE_BUILD_TYPE=MinSizeRel ..
 
 6. Build the project:
 
@@ -50,6 +51,7 @@ ATmega32A on a breadboard. 16MHz crystal. Fuses set to: `-U lfuse:w:0xff:m -U hf
 Serial LED resistors - 120Ohm. 16x2 LCD - HD44780 compatible - 10kOhm contrast pot.
 AREF connected to GND via 100nF cap.
 Detailed function of each peripheral is different for each example.
+
 ![setup](images/setup.png?raw=true "Breadboard setup")
 
 Implemented examples
