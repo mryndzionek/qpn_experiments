@@ -830,6 +830,8 @@ uint8_t BSP_dispSyncing(uint8_t tick_data) {
 /*..........................................................................*/
 uint8_t BSP_dispDecoding(uint8_t tick_data) {
 
+    static bcd_t tmp_min = { .val = 0xFF};
+
     now.second = get_second(&sbins);
     now.hour = get_hour(&hbins);
     now.minute = get_minute(&mbins);
@@ -844,12 +846,16 @@ uint8_t BSP_dispDecoding(uint8_t tick_data) {
     if (sbins.max - sbins.noise_max <= LOCK_TRESHOLD)
         return 0xFF;
 
+    if (now.second == 59) {
+        tmp_min = now.minute;
+    }
+
     if (now.second == 0) {
 
-        now.prev_minute = now.minute;
+        now.prev_minute = tmp_min;
         advance_minute(&mbins);
 
-        if (now.prev_minute.val == 0x00) {
+        if (now.minute.val == 0x00) {
 
             // "while" takes automatically care of timezone change
             while (get_hour(&hbins).val <= 0x23 && get_hour(&hbins).val != now.hour.val) { advance_hour(&hbins); }
