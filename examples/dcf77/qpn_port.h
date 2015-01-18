@@ -51,6 +51,7 @@
 
 #define QK_ISR_ENTRY()          ((void)0)
 #define QK_ISR_EXIT()           QK_SCHEDULE_()
+#define QK_NO_MUTEX
 
 /* interrupt locking policy for interrupt level */
 /* #define QF_ISR_NEST */                    /* nesting of ISRs not allowed */
