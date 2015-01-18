@@ -1,0 +1,10 @@
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories("${CMAKE_SOURCE_DIR}/lcd")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../../include")
+add_avr_executable(
+    nrf
+    main.c
+    mirf.c
+    spi.c
+    ${CMAKE_SOURCE_DIR}/lcd/lcd.c
+)
