@@ -11,7 +11,8 @@
 #include <avr/pgmspace.h>
 
 #define BUFFER_SIZE (10)
-#define CHANNELS    (64)
+#define CHANNELS    (128)
+#define SCALE       (128 / CHANNELS)
 #define DELAY       (32)
 
 const uint8_t PROGMEM minibars[][8] = {
@@ -98,7 +99,7 @@ const uint8_t PROGMEM minibars[][8] = {
 };
 
 
-uint16_t channel[CHANNELS];
+uint8_t channel[CHANNELS];
 uint8_t buffer[BUFFER_SIZE];
 
 void plot_minibars(int location, int strngth)
@@ -125,7 +126,7 @@ void scanChannels(void)
     uint8_t rfchannel = 0;
 
     for(rfchannel = 0; rfchannel < CHANNELS; rfchannel++) {
-        mirf_config_register(RF_CH, (128*rfchannel)/CHANNELS);
+        mirf_config_register(RF_CH, rfchannel*SCALE);
 
         // Or focus on a specific channel
         //mirf_config_register(RF_CH, 2);
@@ -143,7 +144,7 @@ void scanChannels(void)
             delaytime++;
             mirf_read_register(CD, &v, 1);
             if (v == 1) {
-                PORTD ^= (1 << (PD5));
+                //PORTD ^= (1 << (PD5));
                 channel[rfchannel]++;
             }
         }
@@ -153,19 +154,15 @@ void scanChannels(void)
 
 void outputChannels(void)
 {
-    int norm = 0;
     uint8_t rfchannel = 0;
 
     for(rfchannel=0 ; rfchannel<CHANNELS ; rfchannel++)
-        if( channel[rfchannel]>norm ) norm = channel[rfchannel];
-    for(rfchannel=0 ; rfchannel<CHANNELS ; rfchannel++)
     {
-        int pos;
-        if( norm!=0 ) pos = (channel[rfchannel]*10)/norm;
-        else     pos = 0;
+        uint8_t pos = (channel[rfchannel]<<4)>>5;
+
         if( pos==0 && channel[rfchannel]>0 ) pos++;
-        if( pos>8 ) pos = 8;
-        plot_minibars(rfchannel/4, pos*2);
+        if( pos>16 ) pos = 16;
+        plot_minibars(rfchannel>>3, pos);
         channel[rfchannel] = 0;
     }
 }
