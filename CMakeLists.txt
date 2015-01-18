@@ -13,7 +13,7 @@ configure_file (
   "${CMAKE_CURRENT_BINARY_DIR}/include/config.h"
   )
 
-set(PROJECT_INCLUDES ${CMAKE_PREFIX_PATH}/include)
+set(PROJECT_INCLUDES ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 include_directories("${PROJECT_INCLUDES}")
 
