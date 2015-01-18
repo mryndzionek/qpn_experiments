@@ -13,9 +13,9 @@
  *
  */
 // Until a good way is found, you have to include lcd.c, not lcd.h
+#include "config.h"
 #include <avr/pgmspace.h>
 #include <avr/io.h>
-#include "bsp.h"
 #include <util/delay.h>
 #include "lcd_config.h"
  
