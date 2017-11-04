@@ -6,7 +6,7 @@ Introduction
 
 Some tests/examples of the [QP-framework](http://www.state-machine.com/qp/qpn/)
 
-- learn the to use the framework and RTOS concepts 
+- learn to use the framework and RTOS concepts 
 - investigate performance/limitations while using low-end hardware
 - determine usefulness of UML Statecharts modeling
 
