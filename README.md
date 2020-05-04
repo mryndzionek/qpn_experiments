@@ -61,7 +61,7 @@ Implemented examples
 * simple LED blink example - to test the setup and gcc compilation options
 ![blink](images/blink.png?raw=true "simple LED blink")
 
-* simple 'safety critical' system - **PE**destrian **LI**ght **CON**trolled crossing (more info [here](http://www.state-machine.com/resources/AN_PELICAN.pdf))
+* simple 'safety critical' system - **PE**destrian **LI**ght **CON**trolled crossing (more info [here](https://www.state-machine.com/doc/AN_PELICAN.pdf))
 ![pelican](images/pelican.png?raw=true "Pelican crossing example")
 
 | Pin  | Peripheral|
@@ -80,7 +80,7 @@ Implemented examples
 | PD2  | On/Off button |
 | PD3  | 'Pedestrians waiting' button |
 
-* Capstone Dive Computer (more info [here](http://www.state-machine.com/resources/AN_Capstone.pdf) and [here](http://www.barrgroup.com/Dive-Computer))
+* Capstone Dive Computer (more info [here](http://old.state-machine.com/resources/AN_Capstone.pdf))
 ![capstone](images/capstone.png?raw=true "Capstone dive computer example")
 ![capstone_alarm](images/alarm.png?raw=true "Capstone alarm SM")
 ![capstone_lcd](images/capstone_lcd.png?raw=true "Capstone LCD view")
